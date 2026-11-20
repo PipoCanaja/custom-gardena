@@ -101,15 +101,20 @@ PY
 backup_current() {
   LAST_BACKUP=""
   [ -d "$TARGET" ] || return 0
-  local dest
-  dest="$BACKUPS/$(date +%Y%m%d-%H%M%S)"
+  local base dest n=0
+  base="$BACKUPS/$(date +%Y%m%d-%H%M%S)"
+  dest="$base-00"
+  while [ -e "$dest" ] || [ -e "$dest.installed" ]; do
+    n=$((n + 1))
+    dest="$base-$(printf %02d "$n")"
+  done
   mkdir -p "$BACKUPS"
   cp -a "$TARGET" "$dest"
   [ -f "$INSTALLED" ] && cp "$INSTALLED" "$dest.installed"
   LAST_BACKUP="$dest"
   log "Sauvegarde de la version en place : $dest"
   # ne garder que les KEEP_BACKUPS plus récentes
-  ls -1dt "$BACKUPS"/*/ 2>/dev/null | tail -n +"$((KEEP_BACKUPS + 1))" | while read -r old; do
+  ls -1d "$BACKUPS"/*/ 2>/dev/null | LC_ALL=C sort -r | tail -n +"$((KEEP_BACKUPS + 1))" | while read -r old; do
     old="${old%/}"
     rm -rf "$old" "$old.installed"
   done
@@ -164,7 +169,7 @@ cmd_status() {
   fi
   if [ -d "$BACKUPS" ] && ls -1d "$BACKUPS"/*/ >/dev/null 2>&1; then
     log "Sauvegardes disponibles :"
-    ls -1dt "$BACKUPS"/*/ | sed "s|$BACKUPS/||; s|/$||; s/^/  /"
+    ls -1d "$BACKUPS"/*/ | LC_ALL=C sort -r | sed "s|$BACKUPS/||; s|/$||; s/^/  /"
   fi
 }
 
@@ -233,20 +238,20 @@ cmd_rollback() {
     esac
   done
   local latest
-  latest="$(ls -1dt "$BACKUPS"/*/ 2>/dev/null | head -n 1 || true)"
+  latest="$(ls -1d "$BACKUPS"/*/ 2>/dev/null | LC_ALL=C sort -r | head -n 1 || true)"
   [ -n "$latest" ] || die "aucune sauvegarde disponible."
   latest="${latest%/}"
   log "Sauvegarde à restaurer : $(basename "$latest")"
   [ -f "$latest.installed" ] && sed 's/^/  /' "$latest.installed"
   confirm "Restaurer cette sauvegarde ?" || die "restauration annulée."
   local restore="$STATE/restore"
-  rm -rf "$restore" && mv "$latest" "$restore"
-  local restored_info=""
-  [ -f "$latest.installed" ] && restored_info="$latest.installed"
+  rm -rf "$restore" "$restore.installed"
+  mv "$latest" "$restore"
+  if [ -f "$latest.installed" ]; then mv "$latest.installed" "$restore.installed"; fi
   backup_current
   replace_target_with "$restore"
   rm -rf "$restore"
-  if [ -n "$restored_info" ]; then mv "$restored_info" "$INSTALLED"; else rm -f "$INSTALLED"; fi
+  if [ -f "$restore.installed" ]; then mv "$restore.installed" "$INSTALLED"; else rm -f "$INSTALLED"; fi
   log "Restauration terminée."
   maybe_restart
 }
