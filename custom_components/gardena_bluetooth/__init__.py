@@ -14,6 +14,7 @@ from homeassistant.const import CONF_ADDRESS, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 
+from .classic_pairing import ClassicPairingConnection
 from .const import CONF_PRODUCT_TYPE
 from .coordinator import (
     DeviceUnavailable,
@@ -120,7 +121,7 @@ def get_connection(hass: HomeAssistant, address: str) -> CachedConnection:
             raise DeviceUnavailable("Unable to find device")
         return device
 
-    return CachedConnection(DISCONNECT_DELAY, _device_lookup)
+    return ClassicPairingConnection(hass, address, DISCONNECT_DELAY, _device_lookup)
 
 
 async def async_setup_entry(
