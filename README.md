@@ -93,3 +93,18 @@ Revenir ensuite à `warning` avec la même action.
 | 2 | Actions de debug lecture/écriture brute, essais d'écriture | oui |
 | 3 | Fonction définitive : lecture des programmations, actions `set_schedule` / `delete_schedule` | oui |
 | 4 | Tests automatiques, préparation de la PR vers le cœur | — |
+
+## Branche `observe` (debug, à ne pas fusionner)
+
+Code officiel 2026.11.2 inchangé, plus `observe.py` qui ne fait qu'enregistrer.
+Chaque tentative de connexion, connexion réussie, déconnexion et déconnexion
+inattendue produit une ligne JSON dans `/config/gardena_observe.jsonl` (rotation
+à 5 Mo) et une ligne INFO dans le journal de HA
+(`custom_components.gardena_bluetooth.observe`).
+
+Lecture depuis le shell HA :
+
+```sh
+tail -n 20 /config/gardena_observe.jsonl
+grep -c connect_fail /config/gardena_observe.jsonl
+```
