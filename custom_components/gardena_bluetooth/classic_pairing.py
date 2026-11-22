@@ -8,8 +8,8 @@ pair right after the link is established, before services are discovered, and
 rediscovers services without using the cache.
 
 Only devices whose last advertisement identifies a classic Water Computer use
-this path. Every other device, and any failure of the pairing attempt, goes
-through the unchanged CachedConnection._connect.
+this path. Every other device, and a proxy that cannot pair, goes through the
+unchanged CachedConnection._connect.
 """
 
 from __future__ import annotations
@@ -36,10 +36,10 @@ LOGGER = logging.getLogger(__name__)
 GARDENA_SERVICE_PREFIX = "98bd"
 CLASSIC_MODELS = (ProductModelWaterControl.CLASSIC1, ProductModelWaterControl.CLASSIC2)
 
-# The device only accepts the proxy it is bonded to. Home Assistant may first
-# pick another proxy with a better signal; after a failure that proxy is
-# penalised, so a further attempt goes through another path.
-CONNECT_ATTEMPTS = 3
+# One retry lets Home Assistant try another proxy after a failure. Kept low on
+# purpose: repeated connection attempts in a short time have been seen to leave
+# the device refusing every connection until its batteries were removed.
+CONNECT_ATTEMPTS = 2
 
 
 def is_classic_water_computer(hass: HomeAssistant, address: str) -> bool:
@@ -108,15 +108,25 @@ class ClassicPairingConnection(CachedConnection):
                 LOGGER.warning("Proxy GATT cache clear result: %s", cleared)
                 await client.disconnect()
                 client = await self._connect_paired(self._lookup())
-        except (BleakError, NotImplementedError) as err:
+        except NotImplementedError as err:
+            # The proxy firmware cannot pair: keep the original behaviour.
             LOGGER.warning(
-                "Pairing with %s through the proxy failed (%s: %s); "
-                "falling back to an unpaired connection",
+                "Proxy cannot pair with %s (%s); using an unpaired connection",
+                device.address,
+                err,
+            )
+            return await super()._connect()
+        except BleakError as err:
+            # No unpaired fallback: without pairing the device hides its Gardena
+            # services, and an extra attempt only adds load on the device. The
+            # coordinator retries at its normal interval.
+            LOGGER.warning(
+                "Paired connection to %s failed (%s: %s)",
                 device.address,
                 type(err).__name__,
                 err,
             )
-            return await super()._connect()
+            raise
 
         services = _service_list(client)
         if _has_gardena_services(client):
