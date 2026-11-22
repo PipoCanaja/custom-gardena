@@ -36,6 +36,11 @@ LOGGER = logging.getLogger(__name__)
 GARDENA_SERVICE_PREFIX = "98bd"
 CLASSIC_MODELS = (ProductModelWaterControl.CLASSIC1, ProductModelWaterControl.CLASSIC2)
 
+# The device only accepts the proxy it is bonded to. Home Assistant may first
+# pick another proxy with a better signal; after a failure that proxy is
+# penalised, so a further attempt goes through another path.
+CONNECT_ATTEMPTS = 3
+
 
 def is_classic_water_computer(hass: HomeAssistant, address: str) -> bool:
     """Return True if the last advertisement identifies a classic Water Computer."""
@@ -133,6 +138,6 @@ class ClassicPairingConnection(CachedConnection):
             device,
             "Gardena Bluetooth",
             use_services_cache=False,
-            max_attempts=self._max_attempts,
+            max_attempts=max(self._max_attempts, CONNECT_ATTEMPTS),
             pair=True,
         )
