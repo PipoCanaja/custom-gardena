@@ -42,11 +42,24 @@ def is_classic_water_computer(hass: HomeAssistant, address: str) -> bool:
     info = bluetooth.async_last_service_info(hass, address, connectable=True)
     if info is None:
         return False
-    raw = info.manufacturer_data.get(ManufacturerData.company)
-    if not raw:
+    # A real Gardena advertisement carries only the Gardena manufacturer data.
+    # Some proxies report merged advertisements of unrelated devices that also
+    # contain a Gardena block; ignore those.
+    if set(info.manufacturer_data) != {ManufacturerData.company}:
         return False
+    raw = info.manufacturer_data[ManufacturerData.company]
     data = ManufacturerData.decode(raw)
     return data.group == ProductGroup.WATER_CONTROL and data.model in CLASSIC_MODELS
+
+
+def _has_gardena_services(client: BleakClient) -> bool:
+    return any(
+        service.uuid.startswith(GARDENA_SERVICE_PREFIX) for service in client.services
+    )
+
+
+def _service_list(client: BleakClient) -> list[str]:
+    return sorted(service.uuid for service in client.services)
 
 
 class ClassicPairingConnection(CachedConnection):
@@ -63,6 +76,7 @@ class ClassicPairingConnection(CachedConnection):
         super().__init__(disconnect_delay, device_lookup)
         self._hass = hass
         self._address = address
+        self._proxy_cache_cleared = False
 
     async def _connect(self) -> BleakClient:
         if not is_classic_water_computer(self._hass, self._address):
@@ -71,14 +85,24 @@ class ClassicPairingConnection(CachedConnection):
         device = self._lookup()
         LOGGER.debug("Connecting to %s with pairing (classic Water Computer)", device.address)
         try:
-            client = await establish_connection(
-                BleakClient,
-                device,
-                "Gardena Bluetooth",
-                use_services_cache=False,
-                max_attempts=self._max_attempts,
-                pair=True,
-            )
+            client = await self._connect_paired(device)
+            if not _has_gardena_services(client) and not self._proxy_cache_cleared:
+                # The proxy keeps its own copy of the GATT table. Clear it once
+                # per Home Assistant run and rediscover on a new connection.
+                self._proxy_cache_cleared = True
+                LOGGER.warning(
+                    "Gardena services hidden on %s (%s); clearing the proxy GATT "
+                    "cache and reconnecting",
+                    device.address,
+                    _service_list(client),
+                )
+                try:
+                    cleared = await client.clear_cache()
+                except (BleakError, NotImplementedError) as err:
+                    cleared = f"{type(err).__name__}: {err}"
+                LOGGER.warning("Proxy GATT cache clear result: %s", cleared)
+                await client.disconnect()
+                client = await self._connect_paired(self._lookup())
         except (BleakError, NotImplementedError) as err:
             LOGGER.warning(
                 "Pairing with %s through the proxy failed (%s: %s); "
@@ -89,8 +113,8 @@ class ClassicPairingConnection(CachedConnection):
             )
             return await super()._connect()
 
-        services = sorted(service.uuid for service in client.services)
-        if any(uuid.startswith(GARDENA_SERVICE_PREFIX) for uuid in services):
+        services = _service_list(client)
+        if _has_gardena_services(client):
             LOGGER.info(
                 "Paired with %s, Gardena services visible: %s", device.address, services
             )
@@ -102,3 +126,13 @@ class ClassicPairingConnection(CachedConnection):
             )
         self._client = client
         return client
+
+    async def _connect_paired(self, device: BLEDevice) -> BleakClient:
+        return await establish_connection(
+            BleakClient,
+            device,
+            "Gardena Bluetooth",
+            use_services_cache=False,
+            max_attempts=self._max_attempts,
+            pair=True,
+        )
