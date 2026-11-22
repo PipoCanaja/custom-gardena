@@ -24,6 +24,7 @@ from .coordinator import (
 )
 from .classic import async_setup_classic_services
 from .debug_services import async_setup_debug_services
+from .observe import ObservedConnection
 
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
@@ -133,7 +134,7 @@ def get_connection(hass: HomeAssistant, address: str) -> CachedConnection:
             raise DeviceUnavailable("Unable to find device")
         return device
 
-    return CachedConnection(DISCONNECT_DELAY, _device_lookup)
+    return ObservedConnection(hass, address, DISCONNECT_DELAY, _device_lookup)
 
 
 async def async_setup_entry(
