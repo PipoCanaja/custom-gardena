@@ -1,15 +1,20 @@
-"""Pairing through the Bluetooth proxy for the classic Water Computer.
+"""Recovery path for the classic Water Computer when its services are hidden.
 
-Experimental. Observed on a classic Water Computer (model 0, variant 1): over an
-unencrypted link the device only exposes the generic services (1800, 1801,
-180a) and the TI OAD service (f000ffc0); the Gardena services (98bd...) are not
-listed. The official app bonds the device. This connection asks the proxy to
-pair right after the link is established, before services are discovered, and
-rediscovers services without using the cache.
+Experimental. Observed on a classic Water Computer (model 0, variant 1): after
+some connections the proxy only listed the generic services (1800, 1801, 180a)
+and the TI OAD service (f000ffc0), without the Gardena services (98bd...).
+Clearing the proxy GATT cache and reconnecting with pairing brought them back.
+
+Pairing on every connection (v0.0.2 to v0.0.5) was followed twice by the device
+ignoring all connection requests (proxy disconnect reason 0x3e) until its
+batteries were removed. Since v0.0.6 the normal connection is the unchanged
+CachedConnection._connect, as in the official integration. Only when the
+Gardena services are missing does this class clear the proxy cache and
+reconnect with pairing, once per Home Assistant run.
 
 Only devices whose last advertisement identifies a classic Water Computer use
-this path. Every other device, and a proxy that cannot pair, goes through the
-unchanged CachedConnection._connect.
+the recovery path. Every other device goes through CachedConnection._connect
+with no change.
 """
 
 from __future__ import annotations
@@ -35,12 +40,6 @@ LOGGER = logging.getLogger(__name__)
 
 GARDENA_SERVICE_PREFIX = "98bd"
 CLASSIC_MODELS = (ProductModelWaterControl.CLASSIC1, ProductModelWaterControl.CLASSIC2)
-
-# One retry lets Home Assistant try another proxy after a failure. Kept low on
-# purpose: repeated connection attempts in a short time have been seen to leave
-# the device refusing every connection until its batteries were removed.
-CONNECT_ATTEMPTS = 2
-
 
 def is_classic_water_computer(hass: HomeAssistant, address: str) -> bool:
     """Return True if the last advertisement identifies a classic Water Computer."""
@@ -84,42 +83,50 @@ class ClassicPairingConnection(CachedConnection):
         self._proxy_cache_cleared = False
 
     async def _connect(self) -> BleakClient:
+        client = await super()._connect()
         if not is_classic_water_computer(self._hass, self._address):
-            return await super()._connect()
+            return client
+        if _has_gardena_services(client):
+            return client
+
+        LOGGER.warning(
+            "Gardena services hidden on %s (%s)", self._address, _service_list(client)
+        )
+        if self._proxy_cache_cleared:
+            # Already tried once in this run: do not insist, keep the plain client.
+            LOGGER.warning(
+                "Proxy cache already cleared and pairing already tried for %s in "
+                "this run; not retrying",
+                self._address,
+            )
+            return client
+
+        # The proxy keeps its own copy of the GATT table. Clear it once per Home
+        # Assistant run, then reconnect with pairing and a fresh discovery.
+        self._proxy_cache_cleared = True
+        try:
+            cleared = await client.clear_cache()
+        except (BleakError, NotImplementedError) as err:
+            cleared = f"{type(err).__name__}: {err}"
+        LOGGER.warning("Proxy GATT cache clear result: %s", cleared)
+        self._client = None
+        await client.disconnect()
 
         device = self._lookup()
-        LOGGER.debug("Connecting to %s with pairing (classic Water Computer)", device.address)
+        LOGGER.warning("Reconnecting to %s with pairing", device.address)
         try:
-            client = await self._connect_paired(device)
-            if not _has_gardena_services(client) and not self._proxy_cache_cleared:
-                # The proxy keeps its own copy of the GATT table. Clear it once
-                # per Home Assistant run and rediscover on a new connection.
-                self._proxy_cache_cleared = True
-                LOGGER.warning(
-                    "Gardena services hidden on %s (%s); clearing the proxy GATT "
-                    "cache and reconnecting",
-                    device.address,
-                    _service_list(client),
-                )
-                try:
-                    cleared = await client.clear_cache()
-                except (BleakError, NotImplementedError) as err:
-                    cleared = f"{type(err).__name__}: {err}"
-                LOGGER.warning("Proxy GATT cache clear result: %s", cleared)
-                await client.disconnect()
-                client = await self._connect_paired(self._lookup())
-        except NotImplementedError as err:
-            # The proxy firmware cannot pair: keep the original behaviour.
-            LOGGER.warning(
-                "Proxy cannot pair with %s (%s); using an unpaired connection",
-                device.address,
-                err,
+            client = await establish_connection(
+                BleakClient,
+                device,
+                "Gardena Bluetooth",
+                use_services_cache=False,
+                max_attempts=self._max_attempts,
+                pair=True,
             )
-            return await super()._connect()
+        except NotImplementedError as err:
+            LOGGER.warning("Proxy cannot pair with %s (%s)", device.address, err)
+            client = await super()._connect()
         except BleakError as err:
-            # No unpaired fallback: without pairing the device hides its Gardena
-            # services, and an extra attempt only adds load on the device. The
-            # coordinator retries at its normal interval.
             LOGGER.warning(
                 "Paired connection to %s failed (%s: %s)",
                 device.address,
@@ -141,13 +148,3 @@ class ClassicPairingConnection(CachedConnection):
             )
         self._client = client
         return client
-
-    async def _connect_paired(self, device: BLEDevice) -> BleakClient:
-        return await establish_connection(
-            BleakClient,
-            device,
-            "Gardena Bluetooth",
-            use_services_cache=False,
-            max_attempts=max(self._max_attempts, CONNECT_ATTEMPTS),
-            pair=True,
-        )
