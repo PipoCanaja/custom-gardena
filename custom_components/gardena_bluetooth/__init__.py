@@ -13,13 +13,16 @@ from homeassistant.components import bluetooth
 from homeassistant.const import CONF_ADDRESS, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
+import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers.typing import ConfigType
 
-from .const import CONF_PRODUCT_TYPE
+from .const import CONF_PRODUCT_TYPE, DOMAIN
 from .coordinator import (
     DeviceUnavailable,
     GardenaBluetoothConfigEntry,
     GardenaBluetoothCoordinator,
 )
+from .debug_services import async_setup_debug_services
 from .observe import ObservedConnection
 
 PLATFORMS: list[Platform] = [
@@ -37,6 +40,13 @@ LOGGER = logging.getLogger(__name__)
 DISCONNECT_DELAY = 5
 PRODUCTS_SCAN_TIMEOUT = 10
 PRODUCT_TYPE_TIMEOUT = 30
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Register the debug actions (custom-gardena)."""
+    async_setup_debug_services(hass)
+    return True
 
 
 async def async_get_product(hass: HomeAssistant, address: str) -> ManufacturerData:

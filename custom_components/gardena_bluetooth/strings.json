@@ -212,5 +212,69 @@
         "name": "Position {number}"
       }
     }
+  },
+  "services": {
+    "debug_read_schedule": {
+      "name": "Debug: read schedule",
+      "description": "Read and decode one schedule slot of a classic Water Computer.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Config entry",
+          "description": "Gardena entry (optional when only one is loaded)."
+        },
+        "slot": {
+          "name": "Slot",
+          "description": "Schedule slot number (1-3 on the classic Water Computer)."
+        }
+      }
+    },
+    "debug_write_schedule": {
+      "name": "Debug: write schedule",
+      "description": "Write one schedule slot of a classic Water Computer, then read it back.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Config entry",
+          "description": "Gardena entry (optional when only one is loaded)."
+        },
+        "slot": {
+          "name": "Slot",
+          "description": "Schedule slot number (1-3 on the classic Water Computer)."
+        },
+        "start_time": {
+          "name": "Start time",
+          "description": "Local start time."
+        },
+        "duration": {
+          "name": "Duration",
+          "description": "Watering duration in seconds."
+        },
+        "weekdays": {
+          "name": "Weekdays",
+          "description": "Days on which the schedule runs."
+        },
+        "active": {
+          "name": "Active",
+          "description": "Enable the schedule."
+        },
+        "use_sensor": {
+          "name": "Use sensor",
+          "description": "Link the schedule to the soil moisture sensor."
+        }
+      }
+    },
+    "debug_clear_schedule": {
+      "name": "Debug: clear schedule",
+      "description": "Deactivate one schedule slot and reset all its fields to zero.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Config entry",
+          "description": "Gardena entry (optional when only one is loaded)."
+        },
+        "slot": {
+          "name": "Slot",
+          "description": "Schedule slot number (1-3 on the classic Water Computer)."
+        }
+      }
+    }
   }
 }

@@ -18,5 +18,5 @@
   "iot_class": "local_polling",
   "loggers": ["bleak", "bleak_esphome", "gardena_bluetooth"],
   "requirements": ["gardena-bluetooth==2.10.1"],
-  "version": "0.1.0-obs.1"
+  "version": "0.2.0-obs.1"
 }
