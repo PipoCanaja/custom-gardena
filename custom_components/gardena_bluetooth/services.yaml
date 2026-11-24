@@ -1,0 +1,74 @@
+debug_read_schedule:
+  fields:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: gardena_bluetooth
+    slot:
+      required: true
+      example: 1
+      selector:
+        number:
+          min: 1
+          max: 9
+debug_write_schedule:
+  fields:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: gardena_bluetooth
+    slot:
+      required: true
+      example: 1
+      selector:
+        number:
+          min: 1
+          max: 9
+    start_time:
+      required: true
+      example: "06:00:00"
+      selector:
+        time:
+    duration:
+      required: true
+      example: 60
+      selector:
+        number:
+          min: 1
+          max: 86400
+          unit_of_measurement: s
+    weekdays:
+      required: true
+      example: ["mon"]
+      selector:
+        select:
+          multiple: true
+          options:
+            - mon
+            - tue
+            - wed
+            - thu
+            - fri
+            - sat
+            - sun
+    active:
+      default: true
+      selector:
+        boolean:
+    use_sensor:
+      default: false
+      selector:
+        boolean:
+debug_clear_schedule:
+  fields:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: gardena_bluetooth
+    slot:
+      required: true
+      example: 1
+      selector:
+        number:
+          min: 1
+          max: 9
