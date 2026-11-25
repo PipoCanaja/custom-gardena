@@ -14,6 +14,7 @@ from gardena_bluetooth.exceptions import (
 )
 from gardena_bluetooth.parse import (
     Characteristic,
+    CharacteristicBytes,
     CharacteristicSegmented,
     CharacteristicTime,
     CharacteristicType,
@@ -27,7 +28,14 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN
+from .classic_protocol import (
+    HISTORY_UUIDS,
+    VALVE_STATE_UUID,
+    classic_slots,
+    is_classic,
+    slot_uuids,
+)
+from .const import CONF_PRODUCT_TYPE, DOMAIN
 
 SCAN_INTERVAL = timedelta(seconds=60)
 SEGMENTED_SCAN_INTERVAL = timedelta(minutes=30)
@@ -67,6 +75,11 @@ class GardenaBluetoothCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.client = client
         self.characteristics: dict[str, Characteristic] = {}
         self._update_count = 0
+        # custom-gardena phase 3: classic Water Computer only.
+        self.classic = False
+        self.classic_slots: list[int] = []
+        self.slow_ids: set[str] = set()
+        self._force_slow = False
         self.device_info = DeviceInfo(
             identifiers={(DOMAIN, address)},
             connections={(dr.CONNECTION_BLUETOOTH, address)},
@@ -102,6 +115,7 @@ class GardenaBluetoothCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             await self._update_timestamp(DeviceConfiguration.unix_timestamp)
             await self._update_timestamp(AquaContour.unix_timestamp)
 
+            await self._setup_classic(chars)
             self.characteristics = chars
             self.device_info = DeviceInfo(
                 identifiers={(DOMAIN, self.address)},
@@ -115,6 +129,39 @@ class GardenaBluetoothCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             raise UpdateFailed(
                 f"Unable to set up Gardena Bluetooth device due to {exception}"
             ) from exception
+
+    async def _setup_classic(self, chars: dict[str, Characteristic]) -> None:
+        """Detect a classic Water Computer and prepare its raw characteristics.
+
+        Schedules and history are read as raw bytes (decoded in
+        classic_protocol) and only every SEGMENTED_SCAN_INTERVAL, or right
+        after a write or a change of the valve state. Nothing changes for
+        other products: slow_ids stays empty.
+        """
+        # Service and characteristic UUIDs: the hybrid model is recognised by
+        # its services. Raw client inside: no coordinator.client call here.
+        async with self.client._client() as client:  # noqa: SLF001
+            uuids = {service.uuid for service in client.services} | {
+                char.uuid
+                for service in client.services
+                for char in service.characteristics
+            }
+        product_type = self.config_entry.data.get(CONF_PRODUCT_TYPE)
+        self.classic = is_classic(product_type, uuids)
+        if not self.classic:
+            return
+        self.classic_slots = classic_slots(uuids)
+        slow = [uuid for slot in self.classic_slots for uuid in slot_uuids(slot)]
+        slow += [uuid for uuid in HISTORY_UUIDS if uuid in uuids]
+        for uuid in slow:
+            chars[uuid] = CharacteristicBytes(uuid)
+        self.slow_ids = set(slow)
+        LOGGER.debug("Classic Water Computer, schedule slots %s", self.classic_slots)
+
+    async def async_refresh_all(self) -> None:
+        """Refresh now, including the slowly polled characteristics."""
+        self._force_slow = True
+        await self.async_refresh()
 
     async def _update_timestamp(self, char: CharacteristicTime) -> None:
         try:
@@ -141,6 +188,8 @@ class GardenaBluetoothCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # taught to the device again, so they are read every nth poll only.
         skip_segmented = bool(self._update_count % SEGMENTED_SCAN_COUNT)
         self._update_count += 1
+        skip_slow = skip_segmented and not self._force_slow
+        self._force_slow = False
 
         data: dict[str, Any] = {}
         for unique_id in unique_ids:
@@ -150,6 +199,9 @@ class GardenaBluetoothCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 and skip_segmented
                 and unique_id in self.data
             ):
+                data[unique_id] = self.data[unique_id]
+                continue
+            if unique_id in self.slow_ids and skip_slow and unique_id in self.data:
                 data[unique_id] = self.data[unique_id]
                 continue
 
@@ -163,6 +215,12 @@ class GardenaBluetoothCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 raise UpdateFailed(
                     f"Unable to update data for {unique_id} due to {exception}"
                 ) from exception
+
+        # A watering started or ended: read history and schedules next poll.
+        if self.slow_ids and VALVE_STATE_UUID in data:
+            previous = self.data.get(VALVE_STATE_UUID)
+            if previous is not None and previous != data[VALVE_STATE_UUID]:
+                self._force_slow = True
         return data
 
     def get_cached(

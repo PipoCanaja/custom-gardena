@@ -27,6 +27,7 @@ from homeassistant.const import DEGREE, PERCENTAGE, EntityCategory, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
+from .classic import REPLACED_NUMBER_KEYS, classic_numbers
 from .coordinator import GardenaBluetoothConfigEntry, GardenaBluetoothCoordinator
 from .entity import GardenaBluetoothDescriptorEntity, GardenaBluetoothEntity
 
@@ -159,9 +160,11 @@ async def async_setup_entry(
         GardenaBluetoothNumber(coordinator, description, description.context)
         for description in DESCRIPTIONS
         if description.char.unique_id in coordinator.characteristics
+        and not (coordinator.classic and description.key in REPLACED_NUMBER_KEYS)
     ]
     if Valve.remaining_open_time.unique_id in coordinator.characteristics:
         entities.append(GardenaBluetoothRemainingOpenSetNumber(coordinator))
+    entities.extend(classic_numbers(hass, coordinator))
     async_add_entities(entities)
 
 

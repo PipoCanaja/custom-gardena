@@ -1,0 +1,365 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "L'appareil est déjà configuré",
+      "cannot_connect": "Échec de la connexion",
+      "no_devices_found": "Aucun appareil trouvé sur le réseau"
+    },
+    "error": {
+      "cannot_connect": "Échec de la connexion : {error}"
+    },
+    "flow_title": "{name} ({identifier})",
+    "step": {
+      "confirm": {
+        "description": "Voulez-vous configurer {name} ({identifier}) ?\n\nAvant de continuer, assurez-vous que l'appareil est en mode appairage."
+      },
+      "user": {
+        "data": {
+          "address": "Appareil"
+        },
+        "description": "Choisissez un appareil à configurer"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "frost_warning": {
+        "name": "Gel"
+      },
+      "sensor_connected_state": {
+        "name": "Connexion du capteur"
+      },
+      "valve_connected_state": {
+        "name": "Connexion de la vanne"
+      }
+    },
+    "button": {
+      "factory_reset": {
+        "name": "Réinitialisation d'usine"
+      }
+    },
+    "image": {
+      "active_contour": {
+        "name": "Contour actif"
+      },
+      "contour": {
+        "name": "Contour {number}"
+      }
+    },
+    "number": {
+      "manual_watering_time": {
+        "name": "Durée d'arrosage manuel"
+      },
+      "rain_pause": {
+        "name": "Pause pluie"
+      },
+      "remaining_open_set": {
+        "name": "Ouvrir pendant"
+      },
+      "remaining_open_time": {
+        "name": "Temps d'ouverture restant"
+      },
+      "remaining_watering_time": {
+        "name": "Temps d'arrosage restant"
+      },
+      "seasonal_adjust": {
+        "name": "Ajustement saisonnier"
+      },
+      "sensor_threshold": {
+        "name": "Seuil du capteur"
+      },
+      "spray_distance": {
+        "name": "Distance"
+      },
+      "spray_sector": {
+        "name": "Secteur"
+      },
+      "schedule_duration": {
+        "name": "Programmation {slot} : durée"
+      },
+      "seasonal_reduction": {
+        "name": "Réduction de la durée d'arrosage"
+      }
+    },
+    "select": {
+      "active_position": {
+        "name": "Position active",
+        "state": {
+          "position_1": "Position 1",
+          "position_2": "Position 2",
+          "position_3": "Position 3",
+          "position_4": "Position 4",
+          "position_5": "Position 5"
+        }
+      },
+      "operation_mode": {
+        "name": "Mode de fonctionnement",
+        "state": {
+          "active": "Actif",
+          "deep_sleep": "Veille profonde",
+          "manual_mode": "Manuel",
+          "pre_winter": "Préparation à l'hiver"
+        }
+      },
+      "watering_active": {
+        "name": "Arrosage",
+        "state": {
+          "contour_1": "Contour 1",
+          "contour_2": "Contour 2",
+          "contour_3": "Contour 3",
+          "contour_4": "Contour 4",
+          "contour_5": "Contour 5",
+          "preview": "Aperçu",
+          "rest": "Inactif",
+          "setup_mode": "Configuration"
+        }
+      }
+    },
+    "sensor": {
+      "activation_reason": {
+        "name": "Raison d'activation",
+        "state": {
+          "external": "Externe",
+          "manual": "Manuel",
+          "none": "Inactif",
+          "schedule": "Programmation",
+          "setup": "Configuration"
+        }
+      },
+      "aqua_contour_error": {
+        "name": "Erreur",
+        "state": {
+          "charger_error": "Erreur du chargeur",
+          "flash_error": "Erreur de mémoire flash",
+          "no_error": "Aucune erreur détectée",
+          "no_water": "Pas assez d'eau",
+          "rotation_sensor_error": "Erreur du capteur de rotation",
+          "sprinkler_motor_error": "Erreur du moteur d'arroseur",
+          "valve_motor_error": "Erreur du moteur de vanne"
+        }
+      },
+      "error_timestamp": {
+        "name": "Horodatage de l'erreur"
+      },
+      "flow_statistics_current": {
+        "name": "Débit actuel"
+      },
+      "flow_statistics_overall": {
+        "name": "Débit total"
+      },
+      "flow_statistics_reset_timestamp": {
+        "name": "Horodatage de la remise à zéro du débit"
+      },
+      "flow_statistics_resettable": {
+        "name": "Débit depuis la remise à zéro"
+      },
+      "remaining_open_timestamp": {
+        "name": "Fermeture de la vanne"
+      },
+      "remaining_watering_timestamp": {
+        "name": "Fin de l'arrosage"
+      },
+      "sensor_battery_level": {
+        "name": "Batterie du capteur"
+      },
+      "sensor_measurement_timestamp": {
+        "name": "Horodatage du capteur"
+      },
+      "sensor_type": {
+        "name": "Type de capteur"
+      },
+      "skipped_reason": {
+        "name": "Raison du saut",
+        "state": {
+          "battery_empty": "Batterie vide",
+          "charging_cable_plugged": "Câble de charge branché",
+          "contour_data_invalid": "Données de contour invalides",
+          "contour_not_active": "Contour inactif",
+          "contour_not_enabled_for_position": "Contour non activé pour la position",
+          "humidity_sensor": "Capteur d'humidité",
+          "irrigation_control_changed": "Commande d'arrosage modifiée",
+          "manual_mode": "Mode manuel",
+          "no_water": "Pas d'eau",
+          "none": "Aucune",
+          "operational_mode_changed": "Mode de fonctionnement modifié",
+          "other_schedule_with_same_start_time": "Autre programmation à la même heure",
+          "position_changed": "Position modifiée",
+          "rain_pause": "Pause pluie",
+          "rain_sensor": "Capteur de pluie",
+          "rotation_sensor_error": "Erreur du capteur de rotation",
+          "sprinkler_motor_error": "Erreur du moteur d'arroseur",
+          "valve_motor_error": "Erreur du moteur de vanne",
+          "watering_already_active": "Arrosage déjà en cours"
+        }
+      },
+      "spray_current_distance": {
+        "name": "Distance actuelle"
+      },
+      "spray_current_sector": {
+        "name": "Secteur actuel"
+      },
+      "tank_pressure": {
+        "name": "Pression du réservoir"
+      },
+      "water_temperature": {
+        "name": "Température de l'eau"
+      },
+      "next_watering": {
+        "name": "Prochain arrosage"
+      },
+      "last_watering": {
+        "name": "Dernier arrosage",
+        "state_attributes": {
+          "status": {
+            "name": "Résultat",
+            "state": {
+              "watered": "Arrosé",
+              "partially_watered": "Partiellement arrosé",
+              "skipped": "Sauté"
+            }
+          },
+          "reason": {
+            "name": "Raison",
+            "state": {
+              "sensor": "Capteur",
+              "manual": "Arrêté manuellement",
+              "battery": "Pile",
+              "watering_pause": "Pause d'arrosage",
+              "valve_detached": "Vanne détachée",
+              "hard_fault": "Défaut matériel",
+              "dry_run": "Marche à sec",
+              "temperature": "Température"
+            }
+          }
+        }
+      },
+      "schedule_weekdays": {
+        "name": "Programmation {slot} : jours"
+      }
+    },
+    "switch": {
+      "state": {
+        "name": "Ouvert"
+      },
+      "schedule_active": {
+        "name": "Programmation {slot}"
+      }
+    },
+    "text": {
+      "contour_name": {
+        "name": "Contour {number}"
+      },
+      "position_name": {
+        "name": "Position {number}"
+      }
+    },
+    "time": {
+      "schedule_start_time": {
+        "name": "Programmation {slot} : heure de début"
+      }
+    }
+  },
+  "services": {
+    "set_schedule": {
+      "name": "Définir une programmation",
+      "description": "Modifie un emplacement de programmation d'un Water Computer classique. Les champs omis gardent leur valeur actuelle.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Entrée de configuration",
+          "description": "Entrée Gardena (facultative s'il n'y a qu'un Water Computer classique)."
+        },
+        "slot": {
+          "name": "Emplacement",
+          "description": "Numéro de l'emplacement (1 à 3)."
+        },
+        "start_time": {
+          "name": "Heure de début",
+          "description": "Heure de début locale."
+        },
+        "duration": {
+          "name": "Durée",
+          "description": "Durée d'arrosage en secondes, avant la réduction saisonnière."
+        },
+        "weekdays": {
+          "name": "Jours",
+          "description": "Jours où la programmation s'exécute."
+        },
+        "active": {
+          "name": "Activée",
+          "description": "Active ou désactive la programmation."
+        },
+        "use_sensor": {
+          "name": "Utiliser le capteur",
+          "description": "Lie la programmation au capteur d'humidité du sol."
+        }
+      }
+    },
+    "clear_schedule": {
+      "name": "Effacer une programmation",
+      "description": "Désactive un emplacement de programmation d'un Water Computer classique et remet tous ses champs à zéro.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Entrée de configuration",
+          "description": "Entrée Gardena (facultative s'il n'y a qu'un Water Computer classique)."
+        },
+        "slot": {
+          "name": "Emplacement",
+          "description": "Numéro de l'emplacement (1 à 3)."
+        }
+      }
+    },
+    "debug_read_schedule": {
+      "name": "Debug : lire une programmation",
+      "description": "Lit et décode un emplacement de programmation d'un Water Computer classique.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Entrée de configuration",
+          "description": "Entrée Gardena (facultative s'il n'y a qu'un Water Computer classique)."
+        },
+        "slot": {
+          "name": "Emplacement",
+          "description": "Numéro de l'emplacement (1 à 3 sur le Water Computer classique)."
+        }
+      }
+    }
+  },
+  "selector": {
+    "weekday": {
+      "options": {
+        "mon": "Lundi",
+        "tue": "Mardi",
+        "wed": "Mercredi",
+        "thu": "Jeudi",
+        "fri": "Vendredi",
+        "sat": "Samedi",
+        "sun": "Dimanche"
+      }
+    }
+  },
+  "exceptions": {
+    "slot_unavailable": {
+      "message": "L'emplacement de programmation {slot} n'existe pas sur cet appareil."
+    },
+    "no_classic_entry": {
+      "message": "Un seul Water Computer classique chargé était attendu, {count} trouvé(s). Choisissez l'entrée de configuration."
+    },
+    "invalid_duration": {
+      "message": "Programmation {slot} : la durée doit être comprise entre 0 et {max} s."
+    },
+    "invalid_weekdays": {
+      "message": "Programmation {slot} : jour inconnu."
+    },
+    "incomplete_schedule": {
+      "message": "Programmation {slot} : une programmation active doit avoir une durée supérieure à 0 s et au moins un jour."
+    },
+    "schedule_read_failed": {
+      "message": "Impossible de lire la programmation {slot}."
+    },
+    "schedule_write_failed": {
+      "message": "Impossible d'écrire la programmation {slot} : {error}. La programmation est peut-être désactivée."
+    },
+    "schedule_verify_failed": {
+      "message": "La programmation {slot} relue sur l'appareil ne correspond pas à ce qui a été écrit."
+    }
+  }
+}
