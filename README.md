@@ -103,9 +103,9 @@ phase contiennent donc aussi le journal des connexions de `observe`.
 
 ## Phase 3 : Water Computer classique
 
-Tout ce qui suit n'apparaît que sur un Water Computer **classique** (type
-`WATER_COMPUTER`, service vanne `98bd0f10`, pas de service hybride `98bda0xx`).
-Les autres produits gardent exactement les entités officielles.
+Tout ce qui suit n'apparaît que sur un Water Computer **classique**, détecté selon la
+règle du début (`classic_protocol.is_classic`). Les autres produits gardent exactement
+les entités officielles.
 
 Entités, par emplacement N (1 à 3) :
 
@@ -128,10 +128,10 @@ Entités de l'appareil :
 Les jours ne se modifient que par l'action `set_schedule`.
 
 Actions : `gardena_bluetooth.set_schedule` (champs omis = inchangés) et
-`gardena_bluetooth.clear_schedule`. Chaque
-écriture, par action ou par entité, suit la séquence de l'app : désactivation, écriture
-des champs, réactivation, puis relecture ; une relecture différente lève une erreur. Si
-une écriture échoue en cours de route, l'emplacement reste désactivé.
+`gardena_bluetooth.clear_schedule`. Chaque écriture, par action ou par entité, suit la
+séquence de l'app : désactivation, écriture des champs, réactivation, puis relecture ;
+une relecture différente lève une erreur. Si une écriture échoue en cours de route,
+l'emplacement reste désactivé.
 
 ```yaml
 action: gardena_bluetooth.set_schedule
