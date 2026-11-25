@@ -173,6 +173,29 @@ Tests du protocole, sans Home Assistant :
 python3 tests/test_classic_protocol.py
 ```
 
+## Recommandations d'utilisation (batterie et minuteries)
+
+Mesures du 22 au 24 novembre 2026 (54 h, relevé par défaut toutes les 60 s) : environ
+57 connexions par heure, établissement en 1,5 s (médiane) et jusqu'à 18 s, session
+de 6,2 s dont 5 s d'attente avant déconnexion. La consommation n'a pas pu être
+mesurée : les conseils « batterie » partent du principe que moins de temps radio
+veut dire moins de consommation.
+
+- **Espacer les relevés** : options système de l'entrée › décocher « Activer
+  l'interrogation des mises à jour », puis une automatisation
+  `homeassistant.update_entity` toutes les 15 min. Les commandes restent immédiates.
+- **Laisser la vanne arroser seule** : les programmations s'exécutent sans HA ni
+  connexion ; préférer `set_schedule` à une automatisation qui ouvre puis ferme.
+- **Durée d'arrosage manuel = garde-fou** (10 à 15 min) : la vanne se referme seule si
+  HA perd la connexion. Pour une durée précise, utiliser « Ouvrir pendant ».
+- **Réduction de la durée d'arrosage** : durée effective = durée × (100 − réduction) / 100
+  (mesuré à 0, 9, 36 et 100 %). À 100 %, plus rien ne s'arrose.
+- **Horloge** : HA ne remet la vanne à l'heure qu'au démarrage de l'intégration.
+  Après un changement d'heure ou un remplacement des piles, recharger l'intégration.
+- **Hiver** : couper les trois programmations (la vanne arrose même sans eau) et
+  rentrer la vanne.
+- **Pile lithium** : HA affiche 100 % jusqu'à la fin ; la remplacer en début de saison.
+
 ## Branche `observe` (dépannage, jamais fusionnée dans `main`)
 
 `main` plus `observe.py`, qui ne fait qu'enregistrer, pour refaire du dépannage de
