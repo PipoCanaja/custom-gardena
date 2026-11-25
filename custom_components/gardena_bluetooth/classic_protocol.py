@@ -435,6 +435,17 @@ def reduction_from_raw(raw: int | None) -> int | None:
     return max(0, min(100, 100 - int(raw)))
 
 
+def effective_duration(duration: int, reduction: int | None) -> int:
+    """Duration the device actually waters, after the seasonal reduction.
+
+    Measured on the device: 120 s at 9 % reduction (raw 91) opened the valve
+    for about 109 s (history entry: 108 s, ended 109 s after the start).
+    """
+    if reduction is None:
+        return duration
+    return duration * (100 - reduction) // 100
+
+
 def raw_from_reduction(reduction: float) -> int:
     """Raw seasonal adjust value from a reduction in %."""
     return 100 - max(0, min(100, round(reduction)))
