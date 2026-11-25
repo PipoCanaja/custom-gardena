@@ -13,9 +13,10 @@ officielle.
 | Source copiée | `home-assistant/core`, tag `2026.11.2`, `homeassistant/components/gardena_bluetooth` |
 | Bibliothèque | `gardena-bluetooth==2.10.1`, identique au cœur (ne pas changer) |
 
-La branche `main` contient la version validée sur l'appareil (phases 1 à 3, v0.3.3). Le
-tag `v0.0.1` reste la **copie conforme** de l'intégration du cœur : seule la clé
-`"version"` y est ajoutée au `manifest.json`, obligatoire pour une intégration custom.
+La branche `main` contient la version validée sur l'appareil (phases 1 à 3), publiée
+sous le tag `v0.3.3`. La phase 0 était une **copie conforme** de l'intégration du cœur :
+seule la clé `"version"` était ajoutée au `manifest.json`, obligatoire pour une
+intégration custom.
 
 Règles du projet :
 
@@ -51,7 +52,6 @@ Puis :
 /config/scripts/gardena-update.sh install --pr 6     # une pull request
 /config/scripts/gardena-update.sh install --branch observe   # main + journal des connexions
 /config/scripts/gardena-update.sh install --tag v0.3.3
-/config/scripts/gardena-update.sh install --tag v0.0.1     # copie conforme du cœur
 /config/scripts/gardena-update.sh install --ref 4ced203    # un commit précis
 /config/scripts/gardena-update.sh list               # branches et PR disponibles
 /config/scripts/gardena-update.sh status             # ce qui est installé, sauvegardes
@@ -93,7 +93,7 @@ Revenir ensuite à `warning` avec la même action.
 
 | Phase | Contenu | Écrit sur l'appareil | État |
 | --- | --- | --- | --- |
-| 0 | Copie conforme de 2026.11.2 | non | tag `v0.0.1` |
+| 0 | Copie conforme de 2026.11.2 | non | dans l'historique de `main` |
 | 1 | Diagnostic : table GATT, lectures brutes, décodage des programmations classiques | non | dans `main` |
 | 2 | Actions de debug ; traductions en/fr | oui | dans `main` |
 | 3 | Entités et actions de programmation du classique, corrections (voir ci-dessous) ; les actions de debug en écriture sont retirées | oui | dans `main`, tag `v0.3.3` |
