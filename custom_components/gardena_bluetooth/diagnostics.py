@@ -1,8 +1,9 @@
-"""Diagnostics support for Gardena Bluetooth.
+"""Diagnostics support for Gardena Bluetooth (custom-gardena).
 
-Development aid (phase 1): dumps the full GATT table of the device and the raw
-value of every readable characteristic, and decodes the classic Water Computer
-schedule services (98bd0cN0). Read-only: nothing is ever written to the device.
+Development aid: dumps the full GATT table of the device and the raw value of
+every readable characteristic, decodes the classic Water Computer schedule
+services (98bd0cN0) and, on a classic Water Computer, what the phase 3
+entities see in the coordinator cache. Read-only: nothing is written.
 """
 
 from __future__ import annotations
@@ -15,6 +16,17 @@ from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant
 
+from .classic import cached_schedule
+from .classic_protocol import (
+    HISTORY_COUNT_UUID,
+    HISTORY_DURATIONS_UUID,
+    HISTORY_REASONS_UUID,
+    HISTORY_TIMESTAMPS_UUID,
+    SEASONAL_UUID,
+    decode_history,
+    describe_slot_char,
+    reduction_from_raw,
+)
 from .coordinator import GardenaBluetoothConfigEntry
 
 READ_TIMEOUT = 10
@@ -30,49 +42,6 @@ SERIAL_NUMBER_UUID = "00002a25-0000-1000-8000-00805f9b34fb"
 CLASSIC_SCHEDULE_SERVICE = re.compile(
     r"^98bd0c([1-9])0-0b0e-421a-84e5-ddbf75dc6de4$"
 )
-
-WEEKDAYS = ("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
-
-
-def _le_int(data: bytes) -> int:
-    return int.from_bytes(data, "little", signed=False)
-
-
-def _decode_schedule_char(offset: int, data: bytes) -> dict[str, Any]:
-    """Decode one characteristic of a classic schedule service, best effort."""
-    value = _le_int(data) if data else None
-    if offset == 1 and value is not None:
-        hours, rest = divmod(value, 3600)
-        minutes, seconds = divmod(rest, 60)
-        return {
-            "field": "start_time",
-            "seconds": value,
-            "time": f"{hours:02d}:{minutes:02d}:{seconds:02d}",
-        }
-    if offset == 2:
-        return {"field": "duration", "seconds": value}
-    if offset == 3 and value is not None:
-        return {
-            "field": "weekdays",
-            "mask": f"0x{value:02x}",
-            "days": [day for bit, day in enumerate(WEEKDAYS) if value >> bit & 1],
-        }
-    if offset == 4 and value is not None:
-        return {
-            "field": "valve_link",
-            "service": f"0x{value:04x}",
-            "is_valve_0f10": value == 0x0F10,
-        }
-    if offset == 5:
-        return {"field": "active", "value": bool(value)}
-    if offset == 6 and value is not None:
-        return {
-            "field": "sensor_link",
-            "service": f"0x{value:04x}",
-            "uses_sensor": value != 0,
-        }
-    return {"field": "unknown"}
-
 
 async def async_get_config_entry_diagnostics(
     hass: HomeAssistant, entry: GardenaBluetoothConfigEntry
@@ -95,6 +64,30 @@ async def async_get_config_entry_diagnostics(
             },
         },
     }
+
+    if coordinator.classic:
+        data = coordinator.data
+        count = data.get(HISTORY_COUNT_UUID)
+        result["classic"] = {
+            "slots": coordinator.classic_slots,
+            "schedules": {
+                slot: schedule.as_dict() if schedule else None
+                for slot in coordinator.classic_slots
+                for schedule in [cached_schedule(coordinator, slot)]
+            },
+            "seasonal_reduction": reduction_from_raw(data.get(SEASONAL_UUID)),
+            "history": [
+                entry.as_dict()
+                for entry in decode_history(
+                    data.get(HISTORY_TIMESTAMPS_UUID),
+                    data.get(HISTORY_REASONS_UUID),
+                    data.get(HISTORY_DURATIONS_UUID),
+                    count[0] if count else None,
+                )
+            ],
+        }
+    else:
+        result["classic"] = None
 
     gatt: list[dict[str, Any]] = []
     raw_reads: dict[str, dict[str, Any]] = {}
@@ -153,7 +146,7 @@ async def async_get_config_entry_diagnostics(
                         offset = int(char.uuid[7], 16)
                         schedule_info[char.uuid] = {
                             "hex": data.hex(" "),
-                            **_decode_schedule_char(offset, data),
+                            **describe_slot_char(offset, data),
                         }
 
                 gatt.append(service_info)

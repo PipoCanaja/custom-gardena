@@ -78,9 +78,24 @@ def test_wednesday_mask_like_app():
 def test_validate():
     s = cp.Schedule.empty(1)
     assert s.validate() is None
-    assert s.updated(active=True).validate() is not None
+    assert s.updated(active=True).validate() == "incomplete_schedule"
     assert s.updated(active=True, duration=60, weekdays=["mon"]).validate() is None
-    assert s.updated(duration=86400).validate() is not None
+    assert s.updated(duration=86400).validate() == "invalid_duration"
+    assert s.updated(weekdays=["xyz"]).validate() == "invalid_weekdays"
+
+
+def test_same_settings_ignores_valve_link():
+    s = cp.Schedule.decode(3, slot3_raw())
+    empty_link = cp.Schedule.decode(3, {**slot3_raw(), 4: H("0000")})
+    assert s.same_settings(empty_link)
+    assert not s.same_settings(s.updated(duration=61))
+
+
+def test_describe_slot_char():
+    assert cp.describe_slot_char(1, H("647d0000"))["time"] == "08:55:00"
+    assert cp.describe_slot_char(3, H("04"))["days"] == ["wed"]
+    assert cp.describe_slot_char(4, H("100f"))["is_valve_0f10"] is True
+    assert cp.describe_slot_char(6, H("1000"))["uses_sensor"] is True
 
 
 def test_history_from_device():

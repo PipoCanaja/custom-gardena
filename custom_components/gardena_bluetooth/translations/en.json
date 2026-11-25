@@ -332,5 +332,31 @@
         "sun": "Sunday"
       }
     }
+  },
+  "exceptions": {
+    "slot_unavailable": {
+      "message": "Schedule slot {slot} is not available on this device."
+    },
+    "no_classic_entry": {
+      "message": "Expected exactly one loaded classic Water Computer, found {count}. Select the config entry."
+    },
+    "invalid_duration": {
+      "message": "Schedule {slot}: the duration must be between 0 and {max} s."
+    },
+    "invalid_weekdays": {
+      "message": "Schedule {slot}: unknown weekday."
+    },
+    "incomplete_schedule": {
+      "message": "Schedule {slot}: an active schedule needs a duration above 0 s and at least one day."
+    },
+    "schedule_read_failed": {
+      "message": "Unable to read schedule {slot}."
+    },
+    "schedule_write_failed": {
+      "message": "Unable to write schedule {slot}: {error}. The schedule may now be inactive."
+    },
+    "schedule_verify_failed": {
+      "message": "Schedule {slot} read back from the device differs from what was written."
+    }
   }
 }
