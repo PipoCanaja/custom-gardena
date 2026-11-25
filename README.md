@@ -13,8 +13,9 @@ officielle.
 | Source copiée | `home-assistant/core`, tag `2026.11.2`, `homeassistant/components/gardena_bluetooth` |
 | Bibliothèque | `gardena-bluetooth==2.10.1`, identique au cœur (ne pas changer) |
 
-La branche `main` (v0.0.1) est une **copie conforme** de l'intégration du cœur : seule la
-clé `"version"` est ajoutée au `manifest.json`, obligatoire pour une intégration custom.
+La branche `main` contient la version validée sur l'appareil (phases 1 à 3, v0.3.3). Le
+tag `v0.0.1` reste la **copie conforme** de l'intégration du cœur : seule la clé
+`"version"` y est ajoutée au `manifest.json`, obligatoire pour une intégration custom.
 
 Règles du projet :
 
@@ -46,10 +47,11 @@ chmod +x /config/scripts/gardena-update.sh
 Puis :
 
 ```sh
-/config/scripts/gardena-update.sh install            # branche main
-/config/scripts/gardena-update.sh install --pr 1     # une pull request
-/config/scripts/gardena-update.sh install --branch phase-1-diagnostics
-/config/scripts/gardena-update.sh install --tag v0.0.1
+/config/scripts/gardena-update.sh install            # branche main (version validée)
+/config/scripts/gardena-update.sh install --pr 6     # une pull request
+/config/scripts/gardena-update.sh install --branch observe   # main + journal des connexions
+/config/scripts/gardena-update.sh install --tag v0.3.3
+/config/scripts/gardena-update.sh install --tag v0.0.1     # copie conforme du cœur
 /config/scripts/gardena-update.sh install --ref 4ced203    # un commit précis
 /config/scripts/gardena-update.sh list               # branches et PR disponibles
 /config/scripts/gardena-update.sh status             # ce qui est installé, sauvegardes
@@ -89,17 +91,16 @@ Revenir ensuite à `warning` avec la même action.
 
 ## Phases
 
-| Phase | Contenu | Écrit sur l'appareil |
-| --- | --- | --- |
-| 0 — `main`, v0.0.1 | Copie conforme de 2026.11.2 | non |
-| `observe` — PR #3 | Code officiel + journal des connexions (voir plus bas) | non |
-| 1 — `phase-1-diagnostics`, PR #1 | Diagnostic : table GATT, lectures brutes, décodage des programmations classiques | non |
-| 2 — `phase-2-schedule-write`, PR #4 | Actions de debug lecture/écriture brute ; traductions en/fr | oui |
-| 3 — `phase-3-classic-schedules`, PR #5 | Entités et actions de programmation du classique, corrections (voir ci-dessous) ; les actions de debug en écriture sont retirées | oui |
-| 4 | Tests automatiques, préparation de la PR vers le cœur | — |
+| Phase | Contenu | Écrit sur l'appareil | État |
+| --- | --- | --- | --- |
+| 0 | Copie conforme de 2026.11.2 | non | tag `v0.0.1` |
+| 1 | Diagnostic : table GATT, lectures brutes, décodage des programmations classiques | non | dans `main` |
+| 2 | Actions de debug ; traductions en/fr | oui | dans `main` |
+| 3 | Entités et actions de programmation du classique, corrections (voir ci-dessous) ; les actions de debug en écriture sont retirées | oui | dans `main`, tag `v0.3.3` |
+| 4 | Correctifs de la bibliothèque `gardena-bluetooth`, puis tests et PR vers le cœur | — | à faire |
 
-Chaque branche part de la précédente : `observe` → 1 → 2 → 3. Toutes les branches de
-phase contiennent donc aussi le journal des connexions de `observe`.
+Le journal des connexions (`observe`) n'est pas dans `main` : il vit dans sa propre branche,
+voir plus bas.
 
 ## Phase 3 : Water Computer classique
 
@@ -172,16 +173,16 @@ Tests du protocole, sans Home Assistant :
 python3 tests/test_classic_protocol.py
 ```
 
-## Branche `observe` (debug, à ne pas fusionner)
+## Branche `observe` (dépannage, jamais fusionnée dans `main`)
 
-Code officiel 2026.11.2 inchangé, plus `observe.py` qui ne fait qu'enregistrer. Ce
-journal reste actif dans toutes les branches de phase.
-Chaque tentative de connexion, connexion réussie, déconnexion et déconnexion
+`main` plus `observe.py`, qui ne fait qu'enregistrer, pour refaire du dépannage de
+connexion si besoin. Chaque tentative de connexion, connexion réussie, déconnexion et déconnexion
 inattendue produit une ligne JSON dans `/config/gardena_observe.jsonl` (rotation
 à 5 Mo) et une ligne INFO dans le journal de HA
 (`custom_components.gardena_bluetooth.observe`).
 
-Lecture depuis le shell HA :
+Installation : `gardena-update.sh install --branch observe`, puis retour à `main` avec
+`gardena-update.sh install`. Lecture depuis le shell HA :
 
 ```sh
 tail -n 20 /config/gardena_observe.jsonl
