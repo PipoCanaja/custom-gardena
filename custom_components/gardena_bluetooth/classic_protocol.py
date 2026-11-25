@@ -438,8 +438,9 @@ def reduction_from_raw(raw: int | None) -> int | None:
 def effective_duration(duration: int, reduction: int | None) -> int:
     """Duration the device actually waters, after the seasonal reduction.
 
-    Measured on the device: 120 s at 9 % reduction (raw 91) opened the valve
-    for about 109 s (history entry: 108 s, ended 109 s after the start).
+    Measured on the device: 120 s at 9 % reduction (raw 91), twice: the valve
+    closed 109 s and 110 s after the scheduled start; the history recorded
+    108 s and 110 s (about +/- 1 s around 109 s).
     """
     if reduction is None:
         return duration

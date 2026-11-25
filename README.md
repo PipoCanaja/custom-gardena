@@ -149,8 +149,9 @@ Limites connues :
   réduction de 100 %, il passe à « inconnu » ; l'heure prévue reste dans l'attribut
   `next_schedule_start`.
 - La réduction s'applique à la durée de chaque programmation : durée effective =
-  durée × (100 − réduction) / 100. Mesuré à 0 %, 9 % (120 s → environ 109 s) et 100 %.
-  L'historique note la durée d'ouverture réelle, environ 1 s de moins.
+  durée × (100 − réduction) / 100, arrondie à la seconde inférieure. Mesuré à 0 %,
+  9 % (deux fois 120 s → 109 s) et 100 %. La durée notée dans l'historique varie de
+  ±1 s (108 et 110 s pour ces deux arrosages).
 - L'historique est remis à zéro par un retrait des piles.
 
 Diagnostic : le téléchargement des diagnostics de l'entrée ajoute une section
