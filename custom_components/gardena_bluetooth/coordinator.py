@@ -138,7 +138,14 @@ class GardenaBluetoothCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         after a write or a change of the valve state. Nothing changes for
         other products: slow_ids stays empty.
         """
-        uuids = await self.client.get_all_characteristics_uuid()
+        # Service and characteristic UUIDs: the hybrid model is recognised by
+        # its services. Raw client inside: no coordinator.client call here.
+        async with self.client._client() as client:  # noqa: SLF001
+            uuids = {service.uuid for service in client.services} | {
+                char.uuid
+                for service in client.services
+                for char in service.characteristics
+            }
         product_type = self.config_entry.data.get(CONF_PRODUCT_TYPE)
         self.classic = is_classic(product_type, uuids)
         if not self.classic:

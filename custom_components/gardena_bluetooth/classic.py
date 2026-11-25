@@ -111,6 +111,19 @@ def cached_schedule(
     return Schedule.decode(slot, raw)
 
 
+def error(
+    key: str,
+    cls: type[HomeAssistantError] = ServiceValidationError,
+    **placeholders: Any,
+) -> HomeAssistantError:
+    """Translated error (keys in the "exceptions" section of strings.json)."""
+    return cls(
+        translation_domain=DOMAIN,
+        translation_key=key,
+        translation_placeholders={k: str(v) for k, v in placeholders.items()},
+    )
+
+
 async def _read_slot(client: BleakClient, slot: int) -> Schedule:
     raw: dict[int, bytes | None] = {}
     for offset in SLOT_OFFSETS:
@@ -118,7 +131,7 @@ async def _read_slot(client: BleakClient, slot: int) -> Schedule:
             raw[offset] = bytes(await client.read_gatt_char(char_uuid(slot, offset)))
     schedule = Schedule.decode(slot, raw)
     if schedule is None:
-        raise HomeAssistantError(f"Unable to read schedule slot {slot}")
+        raise error("schedule_read_failed", HomeAssistantError, slot=slot)
     return schedule
 
 
@@ -129,9 +142,13 @@ async def async_update_schedule(
     clear: bool = False,
     **changes: Any,
 ) -> Schedule:
-    """Read a slot from the device, apply changes, write it like the app does."""
+    """Read a slot from the device, apply changes, write it like the app does.
+
+    The slot is read back afterwards; a difference raises an error. If a write
+    fails half way, the slot stays inactive (the first write deactivates it).
+    """
     if not coordinator.classic or slot not in coordinator.classic_slots:
-        raise ServiceValidationError(f"Schedule slot {slot} is not available")
+        raise error("slot_unavailable", slot=slot)
 
     written: Schedule
     try:
@@ -139,11 +156,11 @@ async def async_update_schedule(
         # the coordinator refresh only happens once this block is left.
         async with coordinator.client._client() as client:  # noqa: SLF001
             if service_uuid(slot) not in {s.uuid for s in client.services}:
-                raise ServiceValidationError(f"Schedule slot {slot} not found")
+                raise error("slot_unavailable", slot=slot)
             current = Schedule.empty(slot) if clear else await _read_slot(client, slot)
             target = current.updated(**changes)
-            if error := target.validate():
-                raise ServiceValidationError(f"Schedule {slot}: {error}")
+            if problem := target.validate():
+                raise error(problem, slot=slot, max=MAX_DURATION)
             for offset, data in target.write_plan():
                 LOGGER.debug("Schedule %s +%s <- %s", slot, offset, data.hex(" "))
                 async with asyncio.timeout(IO_TIMEOUT):
@@ -151,14 +168,21 @@ async def async_update_schedule(
                         char_uuid(slot, offset), data, response=True
                     )
             written = await _read_slot(client, slot)
-    except (ServiceValidationError, HomeAssistantError):
+    except HomeAssistantError:
         raise
     except Exception as err:
-        raise HomeAssistantError(
-            f"Unable to write schedule {slot}: {type(err).__name__}: {err}"
+        raise error(
+            "schedule_write_failed",
+            HomeAssistantError,
+            slot=slot,
+            error=f"{type(err).__name__}: {err}",
         ) from err
+    finally:
+        # Refresh even after a failure, so the entities show the real state.
+        await coordinator.async_refresh_all()
 
-    await coordinator.async_refresh_all()
+    if not written.same_settings(target):
+        raise error("schedule_verify_failed", HomeAssistantError, slot=slot)
     return written
 
 
@@ -167,7 +191,7 @@ async def async_update_schedule(
 # ---------------------------------------------------------------------------
 
 
-def _coordinator_for_call(call: ServiceCall) -> GardenaBluetoothCoordinator:
+def coordinator_for_call(call: ServiceCall) -> GardenaBluetoothCoordinator:
     entries = [
         entry
         for entry in call.hass.config_entries.async_entries(DOMAIN)
@@ -176,15 +200,12 @@ def _coordinator_for_call(call: ServiceCall) -> GardenaBluetoothCoordinator:
     if entry_id := call.data.get(ATTR_ENTRY):
         entries = [entry for entry in entries if entry.entry_id == entry_id]
     if len(entries) != 1:
-        raise ServiceValidationError(
-            f"Expected exactly one loaded classic Water Computer, found "
-            f"{len(entries)}; set {ATTR_ENTRY}"
-        )
+        raise error("no_classic_entry", count=len(entries))
     return entries[0].runtime_data
 
 
 async def _async_set_schedule(call: ServiceCall) -> ServiceResponse:
-    coordinator = _coordinator_for_call(call)
+    coordinator = coordinator_for_call(call)
     changes: dict[str, Any] = {}
     if ATTR_START in call.data:
         changes["start"] = call.data[ATTR_START]
@@ -201,7 +222,7 @@ async def _async_set_schedule(call: ServiceCall) -> ServiceResponse:
 
 
 async def _async_clear_schedule(call: ServiceCall) -> ServiceResponse:
-    coordinator = _coordinator_for_call(call)
+    coordinator = coordinator_for_call(call)
     schedule = await async_update_schedule(
         coordinator, call.data[ATTR_SLOT], clear=True
     )
@@ -449,17 +470,15 @@ class NextWatering(ClassicEntity, SensorEntity):
         )
         found = next_run(schedules, dt_util.now().replace(tzinfo=None))
         attributes: dict[str, Any] = {"seasonal_reduction": reduction}
-        if found is None:
-            self._attr_native_value = None
-        else:
+        self._attr_native_value = None
+        if found is not None:
             start, schedule = found
-            self._attr_native_value = _local(start)
             attributes["slot"] = schedule.slot
             attributes["duration"] = schedule.duration
-            if reduction == 100:
-                attributes["warning"] = (
-                    "seasonal reduction is 100 %: schedules run for 0 s"
-                )
+            attributes["next_schedule_start"] = _local(start).isoformat()
+            # At 100 % reduction the device runs every schedule for 0 s.
+            if reduction != 100:
+                self._attr_native_value = _local(start)
         self._attr_extra_state_attributes = attributes
         super()._handle_coordinator_update()
 

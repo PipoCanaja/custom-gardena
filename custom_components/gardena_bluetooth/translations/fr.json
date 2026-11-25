@@ -180,7 +180,7 @@
           "irrigation_control_changed": "Commande d'arrosage modifiée",
           "manual_mode": "Mode manuel",
           "no_water": "Pas d'eau",
-          "none": "Inactif",
+          "none": "Aucune",
           "operational_mode_changed": "Mode de fonctionnement modifié",
           "other_schedule_with_same_start_time": "Autre programmation à la même heure",
           "position_changed": "Position modifiée",
@@ -282,7 +282,7 @@
           "description": "Jours où la programmation s'exécute."
         },
         "active": {
-          "name": "Active",
+          "name": "Activée",
           "description": "Active ou désactive la programmation."
         },
         "use_sensor": {
@@ -331,6 +331,32 @@
         "sat": "Samedi",
         "sun": "Dimanche"
       }
+    }
+  },
+  "exceptions": {
+    "slot_unavailable": {
+      "message": "L'emplacement de programmation {slot} n'existe pas sur cet appareil."
+    },
+    "no_classic_entry": {
+      "message": "Un seul Water Computer classique chargé était attendu, {count} trouvé(s). Choisissez l'entrée de configuration."
+    },
+    "invalid_duration": {
+      "message": "Programmation {slot} : la durée doit être comprise entre 0 et {max} s."
+    },
+    "invalid_weekdays": {
+      "message": "Programmation {slot} : jour inconnu."
+    },
+    "incomplete_schedule": {
+      "message": "Programmation {slot} : une programmation active doit avoir une durée supérieure à 0 s et au moins un jour."
+    },
+    "schedule_read_failed": {
+      "message": "Impossible de lire la programmation {slot}."
+    },
+    "schedule_write_failed": {
+      "message": "Impossible d'écrire la programmation {slot} : {error}. La programmation est peut-être désactivée."
+    },
+    "schedule_verify_failed": {
+      "message": "La programmation {slot} relue sur l'appareil ne correspond pas à ce qui a été écrit."
     }
   }
 }

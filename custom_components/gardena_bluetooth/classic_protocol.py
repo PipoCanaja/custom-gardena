@@ -13,6 +13,8 @@ Schedules, services 98bd0cN0 (N = slot), characteristics 98bd0cN1..6:
   +5 active       uint8, 0 or 1
   +6 sensor link  2 bytes, 10 00 with sensor, 00 00 without
 The app always writes: active=0, then +1 +2 +3 +6 +4, then active=1.
+This module writes the same sequence; the valve link is 10 0F for a configured
+slot (duration and days set) and 00 00 for an empty one, like a cleared slot.
 
 Seasonal adjust 98bd0b12: percentage of the scheduled duration that is applied
 (100 = full duration, 0 = every schedule runs for 0 s). The app shows
@@ -99,9 +101,13 @@ def slot_uuids(slot: int) -> list[str]:
     return [char_uuid(slot, offset) for offset in SLOT_OFFSETS]
 
 
-def is_classic(product_type: str | None, char_uuids: Iterable[str]) -> bool:
-    """Return True for a classic Water Computer (not the hybrid, not others)."""
-    uuids = set(char_uuids)
+def is_classic(product_type: str | None, uuids: Iterable[str]) -> bool:
+    """Return True for a classic Water Computer (not the hybrid, not others).
+
+    `uuids` holds the service and characteristic UUIDs of the device. Product
+    type WATER_COMPUTER also covers the hybrid model, hence the service checks.
+    """
+    uuids = set(uuids)
     return (
         product_type == PRODUCT_WATER_COMPUTER
         and VALVE_STATE_UUID in uuids
@@ -226,15 +232,34 @@ class Schedule:
         )
 
     def validate(self) -> str | None:
-        """Return an error message if the slot cannot be written as is."""
+        """Return an error code if the slot cannot be written as is.
+
+        Codes: invalid_duration, invalid_weekdays, incomplete_schedule (the
+        translation keys of the matching errors).
+        """
         if not 0 <= self.duration <= MAX_DURATION:
-            return f"duration must be between 0 and {MAX_DURATION} s"
-        unknown = set(self.weekdays) - set(WEEKDAYS)
-        if unknown:
-            return f"unknown weekdays: {sorted(unknown)}"
+            return "invalid_duration"
+        if set(self.weekdays) - set(WEEKDAYS):
+            return "invalid_weekdays"
         if self.active and not self.configured:
-            return "an active schedule needs a duration > 0 and at least one day"
+            return "incomplete_schedule"
         return None
+
+    def same_settings(self, other: Schedule) -> bool:
+        """Same start, duration, days, state and sensor link."""
+        return (
+            self.start,
+            self.duration,
+            self.weekdays,
+            self.active,
+            self.use_sensor,
+        ) == (
+            other.start,
+            other.duration,
+            other.weekdays,
+            other.active,
+            other.use_sensor,
+        )
 
     def raw(self) -> dict[int, bytes]:
         """Raw characteristic values, keyed by offset."""
@@ -275,6 +300,42 @@ class Schedule:
             "weekdays": sorted_weekdays(self.weekdays),
             "use_sensor": self.use_sensor,
         }
+
+
+def describe_slot_char(offset: int, data: bytes) -> dict[str, object]:
+    """Decode one raw characteristic of a slot, best effort (diagnostics)."""
+    value = int.from_bytes(data, "little", signed=False) if data else None
+    if value is None:
+        return {"field": "unknown"}
+    if offset == OFFSET_START:
+        return {
+            "field": "start_time",
+            "seconds": value,
+            "time": seconds_to_time(value).isoformat(),
+        }
+    if offset == OFFSET_DURATION:
+        return {"field": "duration", "seconds": value}
+    if offset == OFFSET_WEEKDAYS:
+        return {
+            "field": "weekdays",
+            "mask": f"0x{value:02x}",
+            "days": sorted_weekdays(weekdays_from_mask(value)),
+        }
+    if offset == OFFSET_VALVE_LINK:
+        return {
+            "field": "valve_link",
+            "service": f"0x{value:04x}",
+            "is_valve_0f10": value == 0x0F10,
+        }
+    if offset == OFFSET_ACTIVE:
+        return {"field": "active", "value": bool(value)}
+    if offset == OFFSET_SENSOR_LINK:
+        return {
+            "field": "sensor_link",
+            "service": f"0x{value:04x}",
+            "uses_sensor": value != 0,
+        }
+    return {"field": "unknown"}
 
 
 def device_datetime(value: int) -> datetime:
