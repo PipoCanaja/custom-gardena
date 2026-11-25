@@ -9,6 +9,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
+from .classic import classic_switches
 from .coordinator import GardenaBluetoothConfigEntry, GardenaBluetoothCoordinator
 from .entity import GardenaBluetoothEntity
 
@@ -25,6 +26,7 @@ async def async_setup_entry(
         coordinator.characteristics
     ):
         entities.append(GardenaBluetoothValveSwitch(coordinator))
+    entities.extend(classic_switches(coordinator))
 
     async_add_entities(entities)
 

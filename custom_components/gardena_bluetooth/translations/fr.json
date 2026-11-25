@@ -73,6 +73,12 @@
       },
       "spray_sector": {
         "name": "Secteur"
+      },
+      "schedule_duration": {
+        "name": "Programmation {slot} : durée"
+      },
+      "seasonal_reduction": {
+        "name": "Réduction de la durée d'arrosage"
       }
     },
     "select": {
@@ -197,11 +203,43 @@
       },
       "water_temperature": {
         "name": "Température de l'eau"
+      },
+      "next_watering": {
+        "name": "Prochain arrosage"
+      },
+      "last_watering": {
+        "name": "Dernier arrosage",
+        "state_attributes": {
+          "status": {
+            "name": "Résultat",
+            "state": {
+              "watered": "Arrosé",
+              "partially_watered": "Partiellement arrosé",
+              "skipped": "Sauté"
+            }
+          },
+          "reason": {
+            "name": "Raison",
+            "state": {
+              "sensor": "Capteur",
+              "manual": "Arrêté manuellement",
+              "battery": "Pile",
+              "watering_pause": "Pause d'arrosage",
+              "valve_detached": "Vanne détachée",
+              "hard_fault": "Défaut matériel",
+              "dry_run": "Marche à sec",
+              "temperature": "Température"
+            }
+          }
+        }
       }
     },
     "switch": {
       "state": {
         "name": "Ouvert"
+      },
+      "schedule_active": {
+        "name": "Programmation {slot}"
       }
     },
     "text": {
@@ -211,34 +249,25 @@
       "position_name": {
         "name": "Position {number}"
       }
+    },
+    "time": {
+      "schedule_start_time": {
+        "name": "Programmation {slot} : heure de début"
+      }
     }
   },
   "services": {
-    "debug_read_schedule": {
-      "name": "Debug : lire une programmation",
-      "description": "Lit et décode un emplacement de programmation d'un Water Computer classique.",
+    "set_schedule": {
+      "name": "Définir une programmation",
+      "description": "Modifie un emplacement de programmation d'un Water Computer classique. Les champs omis gardent leur valeur actuelle.",
       "fields": {
         "config_entry_id": {
           "name": "Entrée de configuration",
-          "description": "Entrée Gardena (facultative s'il n'y en a qu'une)."
+          "description": "Entrée Gardena (facultative s'il n'y a qu'un Water Computer classique)."
         },
         "slot": {
           "name": "Emplacement",
-          "description": "Numéro de l'emplacement (1 à 3 sur le Water Computer classique)."
-        }
-      }
-    },
-    "debug_write_schedule": {
-      "name": "Debug : écrire une programmation",
-      "description": "Écrit un emplacement de programmation d'un Water Computer classique, puis le relit.",
-      "fields": {
-        "config_entry_id": {
-          "name": "Entrée de configuration",
-          "description": "Entrée Gardena (facultative s'il n'y en a qu'une)."
-        },
-        "slot": {
-          "name": "Emplacement",
-          "description": "Numéro de l'emplacement (1 à 3 sur le Water Computer classique)."
+          "description": "Numéro de l'emplacement (1 à 3)."
         },
         "start_time": {
           "name": "Heure de début",
@@ -246,15 +275,15 @@
         },
         "duration": {
           "name": "Durée",
-          "description": "Durée d'arrosage en secondes."
+          "description": "Durée d'arrosage en secondes, avant la réduction saisonnière."
         },
         "weekdays": {
           "name": "Jours",
           "description": "Jours où la programmation s'exécute."
         },
         "active": {
-          "name": "Actif",
-          "description": "Active la programmation."
+          "name": "Active",
+          "description": "Active ou désactive la programmation."
         },
         "use_sensor": {
           "name": "Utiliser le capteur",
@@ -262,18 +291,45 @@
         }
       }
     },
-    "debug_clear_schedule": {
-      "name": "Debug : effacer une programmation",
-      "description": "Désactive un emplacement de programmation et remet tous ses champs à zéro.",
+    "clear_schedule": {
+      "name": "Effacer une programmation",
+      "description": "Désactive un emplacement de programmation d'un Water Computer classique et remet tous ses champs à zéro.",
       "fields": {
         "config_entry_id": {
           "name": "Entrée de configuration",
-          "description": "Entrée Gardena (facultative s'il n'y en a qu'une)."
+          "description": "Entrée Gardena (facultative s'il n'y a qu'un Water Computer classique)."
+        },
+        "slot": {
+          "name": "Emplacement",
+          "description": "Numéro de l'emplacement (1 à 3)."
+        }
+      }
+    },
+    "debug_read_schedule": {
+      "name": "Debug : lire une programmation",
+      "description": "Lit et décode un emplacement de programmation d'un Water Computer classique.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Entrée de configuration",
+          "description": "Entrée Gardena (facultative s'il n'y a qu'un Water Computer classique)."
         },
         "slot": {
           "name": "Emplacement",
           "description": "Numéro de l'emplacement (1 à 3 sur le Water Computer classique)."
         }
+      }
+    }
+  },
+  "selector": {
+    "weekday": {
+      "options": {
+        "mon": "Lundi",
+        "tue": "Mardi",
+        "wed": "Mercredi",
+        "thu": "Jeudi",
+        "fri": "Vendredi",
+        "sat": "Samedi",
+        "sun": "Dimanche"
       }
     }
   }

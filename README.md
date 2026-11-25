@@ -91,8 +91,38 @@ Revenir ensuite à `warning` avec la même action.
 | 0 — `main`, v0.0.1 | Copie conforme de 2026.11.2 | non |
 | 1 | Diagnostic : table GATT, lectures brutes, décodage des programmations classiques | non |
 | 2 | Actions de debug lecture/écriture brute, essais d'écriture | oui |
-| 3 | Fonction définitive : lecture des programmations, actions `set_schedule` / `delete_schedule` | oui |
+| 3 — `phase-3-classic-schedules` | Entités et actions de programmation du classique, corrections (voir ci-dessous) | oui |
 | 4 | Tests automatiques, préparation de la PR vers le cœur | — |
+
+## Phase 3 : Water Computer classique
+
+Tout ce qui suit n'apparaît que sur un Water Computer **classique** (type
+`WATER_COMPUTER`, service vanne `98bd0f10`, pas de service hybride `98bda0xx`).
+Les autres produits gardent exactement les entités officielles.
+
+Entités, par emplacement N (1 à 3) :
+
+| Entité | Rôle |
+| --- | --- |
+| `switch` Programmation N | active/désactive ; attributs : heure, durée, jours, capteur |
+| `time` Programmation N : heure de début | modifiable |
+| `number` Programmation N : durée | secondes, modifiable |
+
+Entités de l'appareil :
+
+| Entité | Rôle |
+| --- | --- |
+| `number` Réduction de la durée d'arrosage | 0–100 %, comme l'app ; remplace « Ajustement saisonnier » (affiché à tort en jours). **100 % = toutes les programmations à 0 s** |
+| `sensor` Prochain arrosage | horodatage, attributs : emplacement, durée, réduction |
+| `sensor` Dernier arrosage | fin du dernier arrosage ; attributs : début, durée, résultat (arrosé / partiellement / sauté), raison, 10 dernières entrées |
+| `sensor` Raison d'activation | corrigée : `none` vanne fermée, `manual` si 0, `schedule` sinon (comme l'app) |
+
+Actions : `gardena_bluetooth.set_schedule` (champs omis = inchangés) et
+`gardena_bluetooth.clear_schedule`. Chaque écriture suit la séquence de l'app :
+désactivation, écriture des champs, réactivation, relecture.
+
+Programmations et historique sont lus toutes les 30 min, juste après une
+écriture, et au poll qui suit une ouverture ou une fermeture de la vanne.
 
 ## Branche `observe` (debug, à ne pas fusionner)
 

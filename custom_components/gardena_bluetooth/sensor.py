@@ -38,6 +38,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.typing import StateType
 from homeassistant.util import dt as dt_util
 
+from .classic import REPLACED_SENSOR_KEYS, classic_sensors
 from .coordinator import GardenaBluetoothConfigEntry, GardenaBluetoothCoordinator
 from .entity import GardenaBluetoothDescriptorEntity, GardenaBluetoothEntity
 
@@ -271,7 +272,9 @@ async def async_setup_entry(
         GardenaBluetoothSensor(coordinator, description, description.context)
         for description in DESCRIPTIONS
         if description.char.unique_id in coordinator.characteristics
+        and not (coordinator.classic and description.key in REPLACED_SENSOR_KEYS)
     ]
+    entities.extend(classic_sensors(coordinator))
     if Valve.remaining_open_time.unique_id in coordinator.characteristics:
         entities.append(
             GardenaBluetoothRemainSensor(

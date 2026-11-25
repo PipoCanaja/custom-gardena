@@ -22,6 +22,7 @@ from .coordinator import (
     GardenaBluetoothConfigEntry,
     GardenaBluetoothCoordinator,
 )
+from .classic import async_setup_classic_services
 from .debug_services import async_setup_debug_services
 from .observe import ObservedConnection
 
@@ -34,6 +35,7 @@ PLATFORMS: list[Platform] = [
     Platform.SENSOR,
     Platform.SWITCH,
     Platform.TEXT,
+    Platform.TIME,
     Platform.VALVE,
 ]
 LOGGER = logging.getLogger(__name__)
@@ -44,7 +46,8 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Register the debug actions (custom-gardena)."""
+    """Register the schedule and debug actions (custom-gardena)."""
+    async_setup_classic_services(hass)
     async_setup_debug_services(hass)
     return True
 
