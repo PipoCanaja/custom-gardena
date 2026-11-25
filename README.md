@@ -49,10 +49,10 @@ Puis :
 
 ```sh
 /config/scripts/gardena-update.sh install            # branche main (version validée)
-/config/scripts/gardena-update.sh install --pr 6     # une pull request
+/config/scripts/gardena-update.sh install --pr N     # une pull request ouverte
 /config/scripts/gardena-update.sh install --branch observe   # main + journal des connexions
 /config/scripts/gardena-update.sh install --tag v0.3.3
-/config/scripts/gardena-update.sh install --ref 4ced203    # un commit précis
+/config/scripts/gardena-update.sh install --ref 007044b    # un commit précis
 /config/scripts/gardena-update.sh list               # branches et PR disponibles
 /config/scripts/gardena-update.sh status             # ce qui est installé, sauvegardes
 /config/scripts/gardena-update.sh rollback           # revenir à la version précédente
