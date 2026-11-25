@@ -73,6 +73,12 @@
       },
       "spray_sector": {
         "name": "Sector"
+      },
+      "schedule_duration": {
+        "name": "Schedule {slot} duration"
+      },
+      "seasonal_reduction": {
+        "name": "Watering time reduction"
       }
     },
     "select": {
@@ -197,11 +203,43 @@
       },
       "water_temperature": {
         "name": "Water temperature"
+      },
+      "next_watering": {
+        "name": "Next watering"
+      },
+      "last_watering": {
+        "name": "Last watering",
+        "state_attributes": {
+          "status": {
+            "name": "Result",
+            "state": {
+              "watered": "Watered",
+              "partially_watered": "Partially watered",
+              "skipped": "Skipped"
+            }
+          },
+          "reason": {
+            "name": "Reason",
+            "state": {
+              "sensor": "Sensor",
+              "manual": "Stopped manually",
+              "battery": "Battery",
+              "watering_pause": "Watering pause",
+              "valve_detached": "Valve detached",
+              "hard_fault": "Hardware fault",
+              "dry_run": "Dry run",
+              "temperature": "Temperature"
+            }
+          }
+        }
       }
     },
     "switch": {
       "state": {
         "name": "Open"
+      },
+      "schedule_active": {
+        "name": "Schedule {slot}"
       }
     },
     "text": {
@@ -211,34 +249,25 @@
       "position_name": {
         "name": "Position {number}"
       }
+    },
+    "time": {
+      "schedule_start_time": {
+        "name": "Schedule {slot} start time"
+      }
     }
   },
   "services": {
-    "debug_read_schedule": {
-      "name": "Debug: read schedule",
-      "description": "Read and decode one schedule slot of a classic Water Computer.",
+    "set_schedule": {
+      "name": "Set schedule",
+      "description": "Change one schedule slot of a classic Water Computer. Fields left out keep their current value.",
       "fields": {
         "config_entry_id": {
           "name": "Config entry",
-          "description": "Gardena entry (optional when only one is loaded)."
+          "description": "Gardena entry (optional when only one classic Water Computer is loaded)."
         },
         "slot": {
           "name": "Slot",
-          "description": "Schedule slot number (1-3 on the classic Water Computer)."
-        }
-      }
-    },
-    "debug_write_schedule": {
-      "name": "Debug: write schedule",
-      "description": "Write one schedule slot of a classic Water Computer, then read it back.",
-      "fields": {
-        "config_entry_id": {
-          "name": "Config entry",
-          "description": "Gardena entry (optional when only one is loaded)."
-        },
-        "slot": {
-          "name": "Slot",
-          "description": "Schedule slot number (1-3 on the classic Water Computer)."
+          "description": "Schedule slot number (1-3)."
         },
         "start_time": {
           "name": "Start time",
@@ -246,7 +275,7 @@
         },
         "duration": {
           "name": "Duration",
-          "description": "Watering duration in seconds."
+          "description": "Watering duration in seconds, before the seasonal reduction."
         },
         "weekdays": {
           "name": "Weekdays",
@@ -254,7 +283,7 @@
         },
         "active": {
           "name": "Active",
-          "description": "Enable the schedule."
+          "description": "Enable or disable the schedule."
         },
         "use_sensor": {
           "name": "Use sensor",
@@ -262,18 +291,45 @@
         }
       }
     },
-    "debug_clear_schedule": {
-      "name": "Debug: clear schedule",
-      "description": "Deactivate one schedule slot and reset all its fields to zero.",
+    "clear_schedule": {
+      "name": "Clear schedule",
+      "description": "Deactivate one schedule slot of a classic Water Computer and reset all its fields.",
       "fields": {
         "config_entry_id": {
           "name": "Config entry",
-          "description": "Gardena entry (optional when only one is loaded)."
+          "description": "Gardena entry (optional when only one classic Water Computer is loaded)."
+        },
+        "slot": {
+          "name": "Slot",
+          "description": "Schedule slot number (1-3)."
+        }
+      }
+    },
+    "debug_read_schedule": {
+      "name": "Debug: read schedule",
+      "description": "Read and decode one schedule slot of a classic Water Computer.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Config entry",
+          "description": "Gardena entry (optional when only one classic Water Computer is loaded)."
         },
         "slot": {
           "name": "Slot",
           "description": "Schedule slot number (1-3 on the classic Water Computer)."
         }
+      }
+    }
+  },
+  "selector": {
+    "weekday": {
+      "options": {
+        "mon": "Monday",
+        "tue": "Tuesday",
+        "wed": "Wednesday",
+        "thu": "Thursday",
+        "fri": "Friday",
+        "sat": "Saturday",
+        "sun": "Sunday"
       }
     }
   }

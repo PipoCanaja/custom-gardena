@@ -1,11 +1,9 @@
-"""Debug actions for classic Water Computer schedules (phase 2, not for upstream).
+"""Debug action for classic Water Computer schedules (not for upstream).
 
-Three actions, all limited to a classic Water Computer (product type
-WATER_COMPUTER, valve service 98bd0f10 present, no hybrid service):
-
-- debug_read_schedule: read and decode one schedule slot.
-- debug_write_schedule: write the six fields of a slot, then read them back.
-- debug_clear_schedule: deactivate a slot and set every field back to zero.
+debug_read_schedule reads and decodes one schedule slot, limited to a classic
+Water Computer (product type WATER_COMPUTER, valve service 98bd0f10 present,
+no hybrid service). Writing moved to the real actions set_schedule and
+clear_schedule (classic.py) in phase 3.
 
 Encoding, confirmed by the official app (WriteCharacteristic.Schedule.*) and by
 reading the device:
@@ -24,7 +22,6 @@ never holds an active schedule with half-written fields.
 from __future__ import annotations
 
 import asyncio
-from datetime import time
 import logging
 from typing import Any
 
@@ -70,21 +67,6 @@ BASE_SCHEMA = {
     vol.Required(ATTR_SLOT): vol.All(vol.Coerce(int), vol.Range(min=1, max=9)),
 }
 READ_SCHEMA = vol.Schema(BASE_SCHEMA)
-CLEAR_SCHEMA = vol.Schema(BASE_SCHEMA)
-WRITE_SCHEMA = vol.Schema(
-    {
-        **BASE_SCHEMA,
-        vol.Required(ATTR_START): cv.time,
-        vol.Required(ATTR_DURATION): vol.All(
-            vol.Coerce(int), vol.Range(min=1, max=24 * 3600)
-        ),
-        vol.Required(ATTR_WEEKDAYS): vol.All(
-            cv.ensure_list, [vol.In(WEEKDAYS)], vol.Length(min=1)
-        ),
-        vol.Optional(ATTR_ACTIVE, default=True): cv.boolean,
-        vol.Optional(ATTR_SENSOR, default=False): cv.boolean,
-    }
-)
 
 
 def _uuid(slot: int, offset: int) -> str:
@@ -160,46 +142,6 @@ async def _async_read(call: ServiceCall) -> ServiceResponse:
     return await _with_client(call.hass, call, _read_slot)
 
 
-async def _async_write(call: ServiceCall) -> ServiceResponse:
-    start: time = call.data[ATTR_START]
-    start_s = start.hour * 3600 + start.minute * 60 + start.second
-    mask = 0
-    for day in call.data[ATTR_WEEKDAYS]:
-        mask |= 1 << WEEKDAYS.index(day)
-    active = call.data[ATTR_ACTIVE]
-    sensor = SENSOR_LINK if call.data[ATTR_SENSOR] else NO_LINK
-
-    async def _do(client: BleakClient, slot: int) -> dict[str, Any]:
-        before = await _read_slot(client, slot)
-        await _write(client, slot, 5, b"\x00")
-        await _write(client, slot, 1, _u32(start_s))
-        await _write(client, slot, 2, _u32(call.data[ATTR_DURATION]))
-        await _write(client, slot, 3, bytes((mask,)))
-        await _write(client, slot, 4, VALVE_LINK)
-        await _write(client, slot, 6, sensor)
-        if active:
-            await _write(client, slot, 5, b"\x01")
-        after = await _read_slot(client, slot)
-        return {"before": before, "after": after}
-
-    return await _with_client(call.hass, call, _do)
-
-
-async def _async_clear(call: ServiceCall) -> ServiceResponse:
-    async def _do(client: BleakClient, slot: int) -> dict[str, Any]:
-        before = await _read_slot(client, slot)
-        await _write(client, slot, 5, b"\x00")
-        await _write(client, slot, 1, _u32(0))
-        await _write(client, slot, 2, _u32(0))
-        await _write(client, slot, 3, b"\x00")
-        await _write(client, slot, 4, NO_LINK)
-        await _write(client, slot, 6, NO_LINK)
-        after = await _read_slot(client, slot)
-        return {"before": before, "after": after}
-
-    return await _with_client(call.hass, call, _do)
-
-
 def async_setup_debug_services(hass: HomeAssistant) -> None:
     """Register the debug actions."""
     hass.services.async_register(
@@ -208,18 +150,4 @@ def async_setup_debug_services(hass: HomeAssistant) -> None:
         _async_read,
         schema=READ_SCHEMA,
         supports_response=SupportsResponse.ONLY,
-    )
-    hass.services.async_register(
-        DOMAIN,
-        "debug_write_schedule",
-        _async_write,
-        schema=WRITE_SCHEMA,
-        supports_response=SupportsResponse.OPTIONAL,
-    )
-    hass.services.async_register(
-        DOMAIN,
-        "debug_clear_schedule",
-        _async_clear,
-        schema=CLEAR_SCHEMA,
-        supports_response=SupportsResponse.OPTIONAL,
     )
