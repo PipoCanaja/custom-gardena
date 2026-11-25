@@ -51,6 +51,7 @@ from .classic_protocol import (
     activation_reason,
     char_uuid,
     decode_history,
+    effective_duration,
     next_run,
     raw_from_reduction,
     reduction_from_raw,
@@ -475,6 +476,9 @@ class NextWatering(ClassicEntity, SensorEntity):
             start, schedule = found
             attributes["slot"] = schedule.slot
             attributes["duration"] = schedule.duration
+            attributes["effective_duration"] = effective_duration(
+                schedule.duration, reduction
+            )
             attributes["next_schedule_start"] = _local(start).isoformat()
             # At 100 % reduction the device runs every schedule for 0 s.
             if reduction != 100:

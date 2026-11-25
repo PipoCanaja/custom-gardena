@@ -131,6 +131,9 @@ def test_seasonal_and_activation():
     assert cp.reduction_from_raw(100) == 0
     assert cp.raw_from_reduction(0) == 100
     assert cp.raw_from_reduction(30) == 70
+    assert cp.effective_duration(120, 9) == 109  # measured: ~109 s
+    assert cp.effective_duration(120, 100) == 0
+    assert cp.effective_duration(120, None) == 120
     assert cp.activation_reason(False, 1) == "none"
     assert cp.activation_reason(True, 0) == "manual"
     assert cp.activation_reason(True, 1) == "schedule"

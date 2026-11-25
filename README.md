@@ -120,7 +120,7 @@ Entités de l'appareil :
 | Entité | Rôle |
 | --- | --- |
 | `number` Réduction de la durée d'arrosage | 0–100 %, comme l'app ; remplace « Ajustement saisonnier » (affiché à tort en jours). **100 % = toutes les programmations à 0 s** |
-| `sensor` Prochain arrosage | horodatage, attributs : emplacement, durée, réduction |
+| `sensor` Prochain arrosage | horodatage, attributs : emplacement, durée, durée effective, réduction |
 | `sensor` Dernier arrosage | fin du dernier arrosage ; attributs : début, durée, résultat (arrosé / partiellement / sauté), raison, 10 dernières entrées |
 | `sensor` Raison d'activation | corrigée : `none` vanne fermée, `manual` si 0, `schedule` sinon (comme l'app) |
 
@@ -148,8 +148,9 @@ Limites connues :
 - « Prochain arrosage » ne tient compte ni de la pause pluie ni du capteur. Avec une
   réduction de 100 %, il passe à « inconnu » ; l'heure prévue reste dans l'attribut
   `next_schedule_start`.
-- L'effet d'une réduction intermédiaire (par exemple 30 %) sur la durée réelle n'a pas
-  été mesuré ; seuls 0 % et 100 % ont été vérifiés sur l'appareil.
+- La réduction s'applique à la durée de chaque programmation : durée effective =
+  durée × (100 − réduction) / 100. Mesuré à 0 %, 9 % (120 s → environ 109 s) et 100 %.
+  L'historique note la durée d'ouverture réelle, environ 1 s de moins.
 - L'historique est remis à zéro par un retrait des piles.
 
 Diagnostic : le téléchargement des diagnostics de l'entrée ajoute une section
