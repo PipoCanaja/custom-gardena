@@ -114,6 +114,7 @@ Entités, par emplacement N (1 à 3) :
 | `switch` Programmation N | active/désactive ; attributs : heure, durée, jours, capteur |
 | `time` Programmation N : heure de début | modifiable |
 | `number` Programmation N : durée | secondes, modifiable |
+| `sensor` Programmation N : jours | lecture seule (« Lun, Mer, Ven », « Tous les jours », « Aucun ») ; attribut `weekdays` |
 
 Entités de l'appareil :
 
@@ -124,8 +125,10 @@ Entités de l'appareil :
 | `sensor` Dernier arrosage | fin du dernier arrosage ; attributs : début, durée, résultat (arrosé / partiellement / sauté), raison, 10 dernières entrées |
 | `sensor` Raison d'activation | corrigée : `none` vanne fermée, `manual` si 0, `schedule` sinon (comme l'app) |
 
+Les jours ne se modifient que par l'action `set_schedule`.
+
 Actions : `gardena_bluetooth.set_schedule` (champs omis = inchangés) et
-`gardena_bluetooth.clear_schedule`. Les jours ne se règlent que par l'action. Chaque
+`gardena_bluetooth.clear_schedule`. Chaque
 écriture, par action ou par entité, suit la séquence de l'app : désactivation, écriture
 des champs, réactivation, puis relecture ; une relecture différente lève une erreur. Si
 une écriture échoue en cours de route, l'emplacement reste désactivé.
@@ -153,6 +156,10 @@ Limites connues :
   9 % (deux fois 120 s → 109 s) et 100 %. La durée notée dans l'historique varie de
   ±1 s (108 et 110 s pour ces deux arrosages).
 - L'historique est remis à zéro par un retrait des piles.
+- La vanne ne vérifie pas la pression : une programmation s'exécute aussi robinet
+  fermé ou vanne débranchée (vérifié sans eau, vanne à plat, à l'intérieur).
+- Le texte de « Programmation N : jours » est en français si HA est en français,
+  sinon en anglais.
 
 Diagnostic : le téléchargement des diagnostics de l'entrée ajoute une section
 `classic` (emplacements, programmations décodées, réduction, historique) à la table

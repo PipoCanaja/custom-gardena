@@ -126,6 +126,15 @@ def test_next_run():
     assert cp.next_run([s3.updated(active=False)], now) is None
 
 
+def test_format_weekdays():
+    assert cp.format_weekdays(cp.WEEKDAYS, "fr") == "Tous les jours"
+    assert cp.format_weekdays(["fri", "mon", "wed"], "fr") == "Lun, Mer, Ven"
+    assert cp.format_weekdays([], "fr") == "Aucun"
+    assert cp.format_weekdays(["sat", "sun"], "en-GB") == "Sat, Sun"
+    assert cp.format_weekdays(["mon"], "de") == "Mon"
+    assert cp.format_weekdays(["mon"], None) == "Mon"
+
+
 def test_seasonal_and_activation():
     assert cp.reduction_from_raw(0) == 100
     assert cp.reduction_from_raw(100) == 0

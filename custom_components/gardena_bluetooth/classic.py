@@ -52,11 +52,13 @@ from .classic_protocol import (
     char_uuid,
     decode_history,
     effective_duration,
+    format_weekdays,
     next_run,
     raw_from_reduction,
     reduction_from_raw,
     service_uuid,
     slot_uuids,
+    sorted_weekdays,
 )
 from .const import DOMAIN
 from .coordinator import GardenaBluetoothCoordinator
@@ -332,6 +334,28 @@ class ScheduleActiveSwitch(ScheduleEntity, SwitchEntity):
         await self._async_change(active=False)
 
 
+class ScheduleWeekdays(ScheduleEntity, SensorEntity):
+    """Days of a schedule slot, read only (change them with set_schedule)."""
+
+    def __init__(self, coordinator: GardenaBluetoothCoordinator, slot: int) -> None:
+        """Initialize."""
+        super().__init__(coordinator, slot, "weekdays")
+
+    @override
+    def _update_from_schedule(self) -> None:
+        schedule = self._schedule
+        if schedule is None:
+            self._attr_native_value = None
+            self._attr_extra_state_attributes = {}
+            return
+        self._attr_native_value = format_weekdays(
+            schedule.weekdays, self.hass.config.language if self.hass else None
+        )
+        self._attr_extra_state_attributes = {
+            "weekdays": sorted_weekdays(schedule.weekdays)
+        }
+
+
 class ScheduleStartTime(ScheduleEntity, TimeEntity):
     """Start time of a schedule slot."""
 
@@ -584,7 +608,10 @@ def classic_sensors(coordinator: GardenaBluetoothCoordinator) -> list[SensorEnti
     """Sensor entities of the classic Water Computer."""
     if not coordinator.classic:
         return []
-    entities: list[SensorEntity] = [NextWatering(coordinator)]
+    entities: list[SensorEntity] = [
+        ScheduleWeekdays(coordinator, slot) for slot in coordinator.classic_slots
+    ]
+    entities.append(NextWatering(coordinator))
     if HISTORY_TIMESTAMPS_UUID in coordinator.characteristics:
         entities.append(LastWatering(coordinator))
     if {Valve.state.unique_id, Valve.activation_reason.unique_id}.issubset(
