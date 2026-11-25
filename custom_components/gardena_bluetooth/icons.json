@@ -43,6 +43,9 @@
       },
       "last_watering": {
         "default": "mdi:history"
+      },
+      "schedule_weekdays": {
+        "default": "mdi:calendar-week"
       }
     }
   }

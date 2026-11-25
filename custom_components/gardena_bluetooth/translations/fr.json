@@ -232,6 +232,9 @@
             }
           }
         }
+      },
+      "schedule_weekdays": {
+        "name": "Programmation {slot} : jours"
       }
     },
     "switch": {

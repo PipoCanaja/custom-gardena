@@ -161,6 +161,29 @@ def mask_from_weekdays(days: Iterable[str]) -> int:
     return mask
 
 
+DAY_LABELS: Mapping[str, tuple[tuple[str, ...], str, str]] = {
+    # short day names, every day, no day
+    "en": (("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"), "Every day", "None"),
+    "fr": (
+        ("Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"),
+        "Tous les jours",
+        "Aucun",
+    ),
+}
+
+
+def format_weekdays(days: Iterable[str], language: str | None) -> str:
+    """Readable list of days, in English or French (fallback English)."""
+    lang = (language or "en").split("-")[0].lower()
+    names, every_day, no_day = DAY_LABELS.get(lang, DAY_LABELS["en"])
+    selected = set(days)
+    if selected >= set(WEEKDAYS):
+        return every_day
+    if not selected:
+        return no_day
+    return ", ".join(names[i] for i, day in enumerate(WEEKDAYS) if day in selected)
+
+
 def sorted_weekdays(days: Iterable[str]) -> list[str]:
     """Day names in calendar order."""
     return [day for day in WEEKDAYS if day in set(days)]
